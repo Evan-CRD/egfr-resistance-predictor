@@ -1,0 +1,9 @@
+{
+  "baseline_R2_original_pipeline_approx": -0.2,
+  "rich_model_grouped_cv_R2": -0.259,
+  "rich_model_grouped_cv_MAE": 0.362,
+  "rich_model_grouped_cv_RMSE": 0.483,
+  "rich_model_grouped_cv_Spearman": -0.093,
+  "training_rows": 50,
+  "distinct_mutations": 13
+}
