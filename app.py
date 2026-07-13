@@ -27,110 +27,232 @@ st.set_page_config(
 
 CUSTOM_CSS = """
 <style>
+    :root {
+        --bg: #050607;
+        --panel: #0D1117;
+        --panel-2: #111821;
+        --border: #24303D;
+        --border-soft: rgba(95, 115, 135, 0.28);
+        --text: #F4F7FA;
+        --muted: #9AA7B4;
+        --cyan: #44D7E8;
+        --teal: #33D6A6;
+        --purple: #A78BFA;
+    }
+
+    html, body, [class*="css"] {
+        color: var(--text);
+    }
+
     .stApp {
         background:
-            radial-gradient(circle at 10% 0%, rgba(75, 117, 255, 0.10), transparent 30%),
-            radial-gradient(circle at 95% 10%, rgba(48, 205, 164, 0.08), transparent 28%);
+            radial-gradient(circle at 14% 0%, rgba(68, 215, 232, 0.08), transparent 28%),
+            radial-gradient(circle at 92% 12%, rgba(167, 139, 250, 0.06), transparent 24%),
+            linear-gradient(180deg, #050607 0%, #080B0F 100%);
+        color: var(--text);
     }
 
     .block-container {
-        max-width: 1240px;
-        padding-top: 1.7rem;
+        max-width: 1260px;
+        padding-top: 1.6rem;
         padding-bottom: 3rem;
     }
 
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #07090C 0%, #0A0D11 100%);
+        border-right: 1px solid var(--border);
+    }
+
+    section[data-testid="stSidebar"] * {
+        color: var(--text);
+    }
+
     .hero {
-        padding: 2.2rem 2.3rem;
-        border: 1px solid rgba(120, 130, 170, 0.22);
-        border-radius: 22px;
-        background: linear-gradient(
-            135deg,
-            rgba(42, 61, 112, 0.96),
-            rgba(25, 106, 112, 0.92)
-        );
-        box-shadow: 0 18px 48px rgba(20, 30, 60, 0.18);
-        margin-bottom: 1.25rem;
+        padding: 2.3rem 2.4rem;
+        border: 1px solid rgba(68, 215, 232, 0.24);
+        border-radius: 24px;
+        background:
+            linear-gradient(135deg, rgba(15, 24, 33, 0.98), rgba(9, 18, 24, 0.98));
+        box-shadow:
+            0 22px 60px rgba(0, 0, 0, 0.42),
+            inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        margin-bottom: 1.35rem;
     }
 
     .hero h1 {
-        color: white;
-        font-size: 2.5rem;
+        color: #FFFFFF;
+        font-size: 2.65rem;
+        font-weight: 760;
         margin: 0;
-        line-height: 1.12;
+        line-height: 1.08;
+        letter-spacing: -0.025em;
     }
 
     .hero p {
-        color: rgba(255, 255, 255, 0.86);
+        color: #B9C5D1;
         font-size: 1.08rem;
-        max-width: 850px;
-        margin: 0.8rem 0 0 0;
+        max-width: 880px;
+        margin: 0.85rem 0 0 0;
+        line-height: 1.62;
     }
 
     .eyebrow {
-        color: #9fe6d5;
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.11em;
+        color: var(--cyan);
+        font-size: 0.76rem;
+        font-weight: 750;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        margin-bottom: 0.55rem;
+        margin-bottom: 0.65rem;
     }
 
     .info-card {
-        border: 1px solid rgba(120, 130, 170, 0.22);
-        border-radius: 16px;
-        padding: 1.15rem 1.2rem;
-        background: rgba(255, 255, 255, 0.03);
-        min-height: 145px;
+        border: 1px solid var(--border-soft);
+        border-radius: 17px;
+        padding: 1.2rem 1.25rem;
+        background: linear-gradient(180deg, rgba(17, 24, 33, 0.96), rgba(11, 16, 22, 0.96));
+        min-height: 148px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
     }
 
     .info-card h4 {
-        margin: 0 0 0.4rem 0;
+        color: #FFFFFF;
+        margin: 0 0 0.48rem 0;
         font-size: 1.02rem;
     }
 
     .info-card p {
+        color: #AAB6C3;
         margin: 0;
-        opacity: 0.82;
-        line-height: 1.5;
+        line-height: 1.52;
         font-size: 0.93rem;
     }
 
     .result-panel {
-        border: 1px solid rgba(83, 166, 145, 0.34);
+        border: 1px solid rgba(51, 214, 166, 0.42);
         border-radius: 18px;
-        padding: 1.25rem 1.35rem;
-        background: rgba(53, 151, 130, 0.07);
-        margin: 0.8rem 0 1.25rem 0;
+        padding: 1.3rem 1.4rem;
+        background: linear-gradient(180deg, rgba(10, 32, 29, 0.82), rgba(8, 21, 21, 0.90));
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+        margin: 0.9rem 0 1.3rem 0;
     }
 
     .small-note {
-        font-size: 0.86rem;
-        opacity: 0.78;
-        line-height: 1.48;
+        color: var(--muted);
+        font-size: 0.87rem;
+        line-height: 1.5;
     }
 
     .pipeline-step {
-        border-left: 4px solid rgba(71, 149, 224, 0.78);
-        padding: 0.25rem 0 0.25rem 0.8rem;
-        margin: 0.55rem 0;
+        border-left: 4px solid var(--cyan);
+        padding: 0.38rem 0 0.38rem 0.9rem;
+        margin: 0.62rem 0;
+        background: linear-gradient(90deg, rgba(68, 215, 232, 0.055), transparent);
+        border-radius: 0 10px 10px 0;
     }
 
     div[data-testid="stMetric"] {
-        border: 1px solid rgba(120, 130, 170, 0.20);
-        border-radius: 15px;
-        padding: 0.85rem 1rem;
-        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid var(--border-soft);
+        border-radius: 16px;
+        padding: 0.9rem 1rem;
+        background: linear-gradient(180deg, rgba(17, 24, 33, 0.98), rgba(10, 14, 19, 0.98));
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
     }
 
     div[data-testid="stMetricLabel"] {
-        font-weight: 600;
+        color: #AAB5C1;
+        font-weight: 650;
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: #FFFFFF;
+    }
+
+    .stButton > button,
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, #44D7E8, #33D6A6);
+        color: #031011;
+        border: 0;
+        border-radius: 12px;
+        font-weight: 750;
+        padding: 0.65rem 1rem;
+        box-shadow: 0 8px 22px rgba(51, 214, 166, 0.18);
+        transition: all 0.15s ease-in-out;
+    }
+
+    .stButton > button:hover,
+    .stDownloadButton > button:hover {
+        color: #020708;
+        transform: translateY(-1px);
+        box-shadow: 0 11px 28px rgba(68, 215, 232, 0.26);
+    }
+
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="input"] > div,
+    div[data-testid="stFileUploaderDropzone"] {
+        background-color: var(--panel);
+        border-color: var(--border);
+        color: var(--text);
+    }
+
+    div[data-baseweb="popover"],
+    ul[role="listbox"] {
+        background: var(--panel);
+        border: 1px solid var(--border);
+    }
+
+    li[role="option"] {
+        color: var(--text);
+    }
+
+    li[role="option"]:hover {
+        background: rgba(68, 215, 232, 0.10);
+    }
+
+    div[data-testid="stDataFrame"],
+    div[data-testid="stTable"] {
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    div[data-testid="stAlert"] {
+        border-radius: 14px;
+        border: 1px solid var(--border-soft);
+    }
+
+    details {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 0.2rem 0.8rem;
+    }
+
+    h1, h2, h3, h4 {
+        color: #FFFFFF;
+    }
+
+    p, li, label, .stMarkdown {
+        color: #D7DFE7;
+    }
+
+    a {
+        color: var(--cyan) !important;
     }
 
     .footer {
         text-align: center;
-        opacity: 0.65;
+        color: #758292;
         font-size: 0.82rem;
-        padding-top: 2rem;
+        padding-top: 2.2rem;
+    }
+
+    hr {
+        border-color: var(--border);
+    }
+
+    ::selection {
+        background: rgba(68, 215, 232, 0.35);
+        color: white;
     }
 </style>
 """
