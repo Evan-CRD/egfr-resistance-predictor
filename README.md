@@ -1,48 +1,83 @@
-# EGFR TKI Resistance Predictor
+# 🧬 EGFR TKI Resistance Predictor
 
-An end-to-end computational biology project that integrates experimental
-EGFR inhibitor-response data, automated mutant structure generation,
-structural feature engineering, auxiliary mutation-effect learning, and
-an interactive Streamlit application.
+[![Streamlit App](https://img.shields.io/badge/Live%20App-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://egfr-resistance-predictor-zezpmx3zjwyzy5tuajuzcd.streamlit.app)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Status](https://img.shields.io/badge/status-exploratory-orange)](#limitations)
 
-## Project question
+An end-to-end computational biology project integrating experimental EGFR inhibitor-response data, automated mutant structure generation, structural feature engineering, auxiliary mutation-effect learning, grouped machine-learning evaluation, and an interactive Streamlit application.
 
-**Which structural changes in mutant EGFR are most predictive of resistance
-to EGFR tyrosine kinase inhibitors?**
+## Live application
 
-## Pipeline
+**[Open the EGFR TKI Resistance Explorer](https://egfr-resistance-predictor-zezpmx3zjwyzy5tuajuzcd.streamlit.app)**
+
+## Research question
+
+> **Which structural changes in mutant EGFR are associated with resistance to EGFR tyrosine kinase inhibitors?**
+
+The project focuses on lung-cancer-associated EGFR variants and four inhibitors represented in the source assay and structural workflow:
+
+- erlotinib
+- afatinib
+- dacomitinib
+- osimertinib
+
+## Project architecture
 
 ```text
-Experimental dose-response data
+Experimental dose-response workbooks
         ↓
-Mutation–drug outcome extraction
+Mutation–drug AUC-ratio extraction
         ↓
-Drug-bound EGFR structure selection
+Drug-bound EGFR kinase structures
         ↓
-Automated kinase-domain mutant generation
+Automated mutant structure generation
         ↓
 Local + kinase-wide + drug-aware features
         ↓
 Auxiliary model trained on 4,802 EGFR variants
         ↓
-Grouped machine-learning evaluation
+Mutation-grouped model evaluation
         ↓
-Streamlit prediction interface
+Streamlit research dashboard
 ```
 
-## Important result
+## What makes this project substantial
 
-The rich feature model improved error relative to the smaller local-feature
-baseline, but grouped cross-validation remained below the mean-prediction
-baseline. The current model is therefore exploratory and not clinically
-validated.
+- Parses real experimental dose-response measurements from nonstandard Excel layouts
+- Generates supported drug-bound EGFR mutant structures automatically
+- Computes local chemistry, contacts, packing, kinase-landmark distances, graph features, and DFI
+- Adds drug physicochemical descriptors and geometry-based interaction changes
+- Trains an auxiliary mutation-effect model on 4,802 variants
+- Uses mutation-grouped validation to reduce leakage
+- Packages the model into reusable Python code and a deployed web application
 
-Approximate grouped validation metrics for the rich model:
+## Main modeling result
 
-- MAE: 0.362
-- RMSE: 0.483
-- R²: -0.259
-- Spearman correlation: -0.093
+The richer representation lowered prediction error relative to a smaller local-feature representation. However, the rich model did **not** outperform a mean-response baseline for unseen mutation groups.
+
+Current grouped cross-validation metrics:
+
+| Metric | Rich model |
+|---|---:|
+| MAE | 0.362 |
+| RMSE | 0.483 |
+| R² | -0.259 |
+| Spearman correlation | -0.093 |
+
+This is an honest small-data result: the engineering pipeline works, while the current resistance dataset is insufficient for reliable prediction of unseen mutations.
+
+## Application features
+
+The Streamlit dashboard includes:
+
+- mutation and inhibitor selection
+- exploratory AUC-ratio prediction
+- observed-vs-predicted comparison for represented pairs
+- structural feature profile relative to the dataset
+- model-results page
+- pipeline overview
+- batch prediction from rich-feature CSV files
+- explicit responsible-use and limitation sections
 
 ## Repository structure
 
@@ -62,15 +97,25 @@ egfr-resistance-predictor/
 ├── results/
 │   └── model_metrics.json
 └── notebooks/
+    ├── EGFR_Colab_Step_by_Step.ipynb
+    ├── 02_generate_EGFR_mutants.ipynb
+    ├── 03_compute_EGFR_structural_features.ipynb
+    ├── 03B_add_EGFR_kinase_wide_features.ipynb
+    ├── 04_train_EGFR_resistance_model.ipynb
+    ├── 05_train_EGFR_auxiliary_mutation_model.ipynb
+    ├── 06_build_EGFR_rich_feature_table.ipynb
+    └── 07_compare_EGFR_models.ipynb
 ```
 
 ## Run locally
 
 ```bash
-git clone <YOUR-REPOSITORY-URL>
+git clone https://github.com/Evan-CRD/egfr-resistance-predictor.git
 cd egfr-resistance-predictor
+
 python -m venv .venv
 source .venv/bin/activate
+
 pip install -r requirements.txt
 streamlit run app.py
 ```
@@ -81,40 +126,40 @@ On Windows:
 .venv\Scripts\activate
 ```
 
-## Deploy on Streamlit Community Cloud
+## Modeling decisions
 
-1. Push this repository to GitHub.
-2. Sign in to Streamlit Community Cloud with GitHub.
-3. Create a new app.
-4. Choose this repository and branch.
-5. Set the main file path to `app.py`.
-6. Deploy.
+### Continuous target
 
-## Website behavior
+The primary model predicts the experimental AUC ratio relative to WT rather than discarding information through an immediate binary conversion.
 
-The application has two prediction modes:
+### Grouped validation
 
-1. Explore mutation–drug pairs already represented by precomputed structures.
-2. Upload new rows generated by the same rich-feature pipeline.
+All rows for the same mutation are kept in the same fold. This prevents the model from training on one drug measurement for a mutation and testing on another measurement for the same mutation.
 
-## Scientific limitations
+### Auxiliary model
 
-- Small drug-response dataset.
-- Only supported kinase-domain substitutions were modeled.
-- Static mutant structures were not subjected to validated ligand-aware
-  minimization.
-- Geometry-based hydrogen-bond and clash features are proxies.
-- The prediction is not intended for patient care or treatment decisions.
+A separate model learns general mutation-effect scores from 4,802 EGFR kinase variants. Its prediction is then incorporated as an additional resistance-model feature rather than incorrectly merging two different biological labels.
 
-## Future work
+## Limitations
 
-- Add independent mutation–drug response datasets.
-- Collapse and model biological replicates more carefully.
-- Add validated stability, pocket-volume, and binding-energy descriptors.
-- Evaluate per-drug and multitask models.
-- Add uncertainty estimates and external validation.
+- Only 50 supported kinase-domain mutation–drug rows were available.
+- Several rows are repeated measurements rather than fully independent mutation–drug systems.
+- Only substitutions represented in the chosen kinase-domain structures were modeled.
+- Mutant structures were not subjected to validated ligand-aware minimization.
+- Hydrogen-bond, clash, and contact features are geometric proxies.
+- Grouped cross-validation remained below the mean-prediction baseline.
+- Predictions are exploratory and must not guide patient treatment.
 
-## License
+## Future development
 
-Add a license before public release. MIT is a common choice for portfolio
-software, but confirm that all included data permit redistribution.
+- integrate independent EGFR mutation–drug response datasets
+- collapse and model biological replicates more carefully
+- add calibrated uncertainty estimates
+- calculate validated stability and pocket-volume features
+- evaluate per-drug and multitask models
+- add external validation
+- explore graph neural networks only after sufficient data are available
+
+## Responsible-use statement
+
+This software is intended for education and computational research. It is not a clinical decision-support system, medical device, or substitute for professional oncology guidance.
