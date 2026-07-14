@@ -1,0 +1,19 @@
+HOME
+ ↓
+Structural Analysis
+ ↓
+Drug Interaction Analysis
+ ↓
+Mechanistic Interpretation
+ ↓
+Resistance Prediction
+
+Workflow page:
+1. Experimental AUC
+2. Crystal structure
+3. Computational mutagenesis
+4. Structural feature engineering
+5. Auxiliary model (~4800 mutations)
+6. Random Forest
+7. Precompute mutation-drug matrix
+8. Streamlit inference
