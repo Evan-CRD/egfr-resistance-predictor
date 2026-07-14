@@ -184,3 +184,18 @@ The app does not return a stored experimental outcome as the prediction. Structu
 - defaults to the resistant-like T790M–Dacomitinib example
 - exposes all successfully generated drugs for each mutation
 - reports how many generated pairs cross the exploratory resistance threshold
+
+
+## Version 3: structure-first interface
+
+The website is organized as a computational structural biology platform rather than an ML-first dashboard.
+
+1. Structural Analysis
+2. Drug Interaction Analysis
+3. Mechanistic Interpretation
+4. Resistance Prediction
+5. Model Performance
+6. Computational Workflow
+7. Methods & Limitations
+
+Prediction remains available, but it is explicitly presented as a downstream exploratory application of the structural feature pipeline.

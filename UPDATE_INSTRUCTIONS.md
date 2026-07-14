@@ -1,10 +1,15 @@
-# Apply the Dark Theme
+# Apply Version 3
 
-Replace the root-level `app.py` in your GitHub repository with this file.
+Upload/replace these paths in the GitHub repository:
 
-1. Open `app.py` on GitHub.
-2. Click the pencil icon.
-3. Replace all existing code with the new `app.py`.
-4. Commit the change.
+- `app.py`
+- `README.md`
+- `.streamlit/config.toml`
 
-Streamlit Community Cloud should redeploy automatically.
+The data, model, and `src/` files remain unchanged.
+
+After committing:
+1. Open Streamlit Community Cloud.
+2. Open the app settings.
+3. Reboot the app.
+4. Confirm the sidebar says `Version 3.0 · structure-first interface`.
