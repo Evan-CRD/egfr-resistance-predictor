@@ -11,8 +11,9 @@ from src.predict import predict_auc_ratio
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-DATA_PATH = PROJECT_ROOT / "data" / "egfr_structural_features_rich.csv"
+DATA_PATH = PROJECT_ROOT / "data" / "egfr_all_supported_mutation_drug_features.csv"
 METRICS_PATH = PROJECT_ROOT / "results" / "model_metrics.json"
+UNSUPPORTED_PATH = PROJECT_ROOT / "data" / "unsupported_mutation_drug_pairs.csv"
 GITHUB_URL = "https://github.com/Evan-CRD/egfr-resistance-predictor"
 RESISTANCE_THRESHOLD = 1.5
 
@@ -38,6 +39,8 @@ CUSTOM_CSS = """
         --cyan: #44D7E8;
         --teal: #33D6A6;
         --purple: #A78BFA;
+        --warning: #F3C969;
+        --danger: #FF6B7A;
     }
 
     html, body, [class*="css"] {
@@ -71,11 +74,8 @@ CUSTOM_CSS = """
         padding: 2.3rem 2.4rem;
         border: 1px solid rgba(68, 215, 232, 0.24);
         border-radius: 24px;
-        background:
-            linear-gradient(135deg, rgba(15, 24, 33, 0.98), rgba(9, 18, 24, 0.98));
-        box-shadow:
-            0 22px 60px rgba(0, 0, 0, 0.42),
-            inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        background: linear-gradient(135deg, rgba(15, 24, 33, 0.98), rgba(9, 18, 24, 0.98));
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
         margin-bottom: 1.35rem;
     }
 
@@ -91,7 +91,7 @@ CUSTOM_CSS = """
     .hero p {
         color: #B9C5D1;
         font-size: 1.08rem;
-        max-width: 880px;
+        max-width: 900px;
         margin: 0.85rem 0 0 0;
         line-height: 1.62;
     }
@@ -105,41 +105,36 @@ CUSTOM_CSS = """
         margin-bottom: 0.65rem;
     }
 
-    .info-card {
+    .info-card, .status-card {
         border: 1px solid var(--border-soft);
         border-radius: 17px;
         padding: 1.2rem 1.25rem;
         background: linear-gradient(180deg, rgba(17, 24, 33, 0.96), rgba(11, 16, 22, 0.96));
-        min-height: 148px;
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
     }
 
-    .info-card h4 {
+    .info-card { min-height: 150px; }
+
+    .info-card h4, .status-card h4 {
         color: #FFFFFF;
         margin: 0 0 0.48rem 0;
-        font-size: 1.02rem;
     }
 
-    .info-card p {
+    .info-card p, .status-card p {
         color: #AAB6C3;
         margin: 0;
         line-height: 1.52;
         font-size: 0.93rem;
     }
 
-    .result-panel {
-        border: 1px solid rgba(51, 214, 166, 0.42);
-        border-radius: 18px;
-        padding: 1.3rem 1.4rem;
-        background: linear-gradient(180deg, rgba(10, 32, 29, 0.82), rgba(8, 21, 21, 0.90));
-        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
-        margin: 0.9rem 0 1.3rem 0;
+    .observed-card {
+        border: 1px solid rgba(51, 214, 166, 0.45);
+        background: linear-gradient(180deg, rgba(10, 35, 30, 0.88), rgba(8, 22, 20, 0.92));
     }
 
-    .small-note {
-        color: var(--muted);
-        font-size: 0.87rem;
-        line-height: 1.5;
+    .extrapolation-card {
+        border: 1px solid rgba(243, 201, 105, 0.45);
+        background: linear-gradient(180deg, rgba(40, 31, 10, 0.82), rgba(24, 19, 8, 0.92));
     }
 
     .pipeline-step {
@@ -176,14 +171,12 @@ CUSTOM_CSS = """
         font-weight: 750;
         padding: 0.65rem 1rem;
         box-shadow: 0 8px 22px rgba(51, 214, 166, 0.18);
-        transition: all 0.15s ease-in-out;
     }
 
     .stButton > button:hover,
     .stDownloadButton > button:hover {
         color: #020708;
         transform: translateY(-1px);
-        box-shadow: 0 11px 28px rgba(68, 215, 232, 0.26);
     }
 
     div[data-baseweb="select"] > div,
@@ -194,20 +187,6 @@ CUSTOM_CSS = """
         color: var(--text);
     }
 
-    div[data-baseweb="popover"],
-    ul[role="listbox"] {
-        background: var(--panel);
-        border: 1px solid var(--border);
-    }
-
-    li[role="option"] {
-        color: var(--text);
-    }
-
-    li[role="option"]:hover {
-        background: rgba(68, 215, 232, 0.10);
-    }
-
     div[data-testid="stDataFrame"],
     div[data-testid="stTable"] {
         border: 1px solid var(--border-soft);
@@ -215,44 +194,15 @@ CUSTOM_CSS = """
         overflow: hidden;
     }
 
-    div[data-testid="stAlert"] {
-        border-radius: 14px;
-        border: 1px solid var(--border-soft);
-    }
-
-    details {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 0.2rem 0.8rem;
-    }
-
-    h1, h2, h3, h4 {
-        color: #FFFFFF;
-    }
-
-    p, li, label, .stMarkdown {
-        color: #D7DFE7;
-    }
-
-    a {
-        color: var(--cyan) !important;
-    }
+    h1, h2, h3, h4 { color: #FFFFFF; }
+    p, li, label, .stMarkdown { color: #D7DFE7; }
+    a { color: var(--cyan) !important; }
 
     .footer {
         text-align: center;
         color: #758292;
         font-size: 0.82rem;
         padding-top: 2.2rem;
-    }
-
-    hr {
-        border-color: var(--border);
-    }
-
-    ::selection {
-        background: rgba(68, 215, 232, 0.35);
-        color: white;
     }
 </style>
 """
@@ -261,22 +211,29 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    frame = pd.read_csv(DATA_PATH)
-    return frame
+    return pd.read_csv(DATA_PATH)
 
 
 @st.cache_data
 def load_metrics() -> dict:
-    if not METRICS_PATH.exists():
-        return {}
-    return json.loads(METRICS_PATH.read_text())
+    if METRICS_PATH.exists():
+        return json.loads(METRICS_PATH.read_text())
+    return {}
+
+
+@st.cache_data
+def load_unsupported() -> pd.DataFrame:
+    if UNSUPPORTED_PATH.exists():
+        return pd.read_csv(UNSUPPORTED_PATH)
+    return pd.DataFrame()
 
 
 def mean_feature_row(frame: pd.DataFrame) -> pd.DataFrame:
-    """Collapse replicate rows into one prediction row."""
+    """Collapse replicate rows safely without pandas dtype-assignment errors."""
     output = frame.iloc[[0]].copy()
     numeric_columns = frame.select_dtypes(include=[np.number]).columns
-    output.loc[:, numeric_columns] = frame[numeric_columns].mean().values
+    for column in numeric_columns:
+        output[column] = pd.to_numeric(frame[column], errors="coerce").mean()
     return output
 
 
@@ -286,43 +243,35 @@ def classify_auc(value: float) -> tuple[str, str]:
     return "Sensitive-like", "Below the exploratory 1.50 threshold"
 
 
-def normalized_feature_profile(
-    selected: pd.DataFrame,
-    reference: pd.DataFrame,
-    columns: list[str],
-) -> pd.DataFrame:
-    """Create a robust relative profile using median and IQR."""
-    available = [column for column in columns if column in selected.columns]
-    rows = []
-
-    labels = {
+def feature_profile(selected: pd.DataFrame, reference: pd.DataFrame) -> pd.DataFrame:
+    feature_map = {
         "delta_sidechain_volume_A3": "Side-chain volume change",
         "delta_local_packing_atoms_6A": "Local packing change",
         "delta_steric_clashes_2A": "Steric-clash change",
         "delta_protein_drug_atom_contacts_4p5A": "Protein–drug contact change",
+        "pocket_residues_lost_4p5A": "Pocket residues lost",
+        "putative_polar_contacts_lost": "Polar contacts lost",
         "distance_to_ATP_pocket_centroid_A": "Distance to ATP pocket",
         "mutation_site_DFI": "Mutation-site DFI",
         "auxiliary_predicted_mutation_effect": "Auxiliary mutation-effect score",
     }
 
-    for column in available:
+    rows = []
+    for column, label in feature_map.items():
+        if column not in selected.columns:
+            continue
+
         values = pd.to_numeric(reference[column], errors="coerce")
         selected_value = float(pd.to_numeric(selected[column], errors="coerce").mean())
-
         median = float(values.median())
-        q1 = float(values.quantile(0.25))
-        q3 = float(values.quantile(0.75))
-        iqr = q3 - q1
+        iqr = float(values.quantile(0.75) - values.quantile(0.25))
 
-        if not np.isfinite(iqr) or iqr == 0:
-            relative = 0.0
-        else:
-            relative = (selected_value - median) / iqr
+        relative = 0.0 if not np.isfinite(iqr) or iqr == 0 else (selected_value - median) / iqr
 
         rows.append(
             {
-                "Feature": labels.get(column, column),
-                "Relative to dataset median": float(np.clip(relative, -3, 3)),
+                "Feature": label,
+                "Relative to matrix median": float(np.clip(relative, -3, 3)),
                 "Raw value": selected_value,
             }
         )
@@ -332,62 +281,62 @@ def normalized_feature_profile(
 
 data = load_data()
 metrics = load_metrics()
+unsupported = load_unsupported()
 
 st.markdown(
     """
     <div class="hero">
-        <div class="eyebrow">Structural bioinformatics · Machine learning · EGFR</div>
+        <div class="eyebrow">Structure-generated features · Machine learning · EGFR</div>
         <h1>EGFR TKI Resistance Explorer</h1>
         <p>
-            An end-to-end research prototype that connects experimental inhibitor-response
-            measurements with mutant structure generation, kinase-aware feature engineering,
-            drug descriptors, DFI, and an auxiliary mutation-effect model.
+            Select a supported EGFR kinase mutation and inhibitor. The app retrieves a
+            structurally generated feature vector for that pair and asks the trained model
+            to predict its response. Stored experimental outcomes are shown only when they
+            genuinely exist.
         </p>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-top_left, top_middle, top_right = st.columns([1.15, 1, 1])
-
-with top_left:
-    st.markdown(
-        """
-        <div class="info-card">
-            <h4>🧪 Research question</h4>
-            <p>Which structural changes in mutant EGFR are associated with altered response to tyrosine kinase inhibitors?</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with top_middle:
+c1, c2, c3 = st.columns(3)
+with c1:
     st.markdown(
         f"""
         <div class="info-card">
-            <h4>📊 Current dataset</h4>
-            <p>{len(data)} modeled mutation–drug rows, {data["mutation"].nunique()} distinct kinase-domain mutations, and {data["drug"].nunique()} represented inhibitors.</p>
+            <h4>🧬 Supported mutations</h4>
+            <p>{data["mutation"].nunique()} kinase-domain substitutions with successfully generated structural feature vectors.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-with top_right:
+with c2:
+    st.markdown(
+        f"""
+        <div class="info-card">
+            <h4>💊 Generated combinations</h4>
+            <p>{len(data)} mutation–drug feature rows across {data["drug"].nunique()} represented inhibitors.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+with c3:
     st.markdown(
         """
         <div class="info-card">
-            <h4>⚠️ Appropriate use</h4>
-            <p>Educational and exploratory only. The current model is not clinically validated and should not guide treatment decisions.</p>
+            <h4>⚠️ Research prototype</h4>
+            <p>Predictions are exploratory, not clinically validated, and must not be used for treatment decisions.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-st.sidebar.markdown("## 🧬 Project navigation")
+st.sidebar.markdown("## 🧬 Navigation")
 page = st.sidebar.radio(
     "Go to",
     [
         "Prediction explorer",
+        "Combination coverage",
         "Model results",
         "Pipeline",
         "Batch prediction",
@@ -397,45 +346,41 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(
-    f"[View the source code on GitHub]({GITHUB_URL})"
-)
-st.sidebar.caption(
-    "Version 1.0 · exploratory kinase-domain model"
-)
+st.sidebar.markdown(f"[View source on GitHub]({GITHUB_URL})")
+st.sidebar.caption("Version 2.1 · generated structural feature matrix")
 
 
 if page == "Prediction explorer":
     st.header("Prediction explorer")
     st.write(
-        "Choose a mutation and inhibitor represented in the precomputed structural dataset."
+        "Every listed choice has a successfully generated structural feature vector."
     )
 
-    control_col, context_col = st.columns([0.9, 1.35], gap="large")
+    left, right = st.columns([0.9, 1.3], gap="large")
 
-    with control_col:
+    with left:
+        mutation_options = sorted(data["mutation"].unique())
+        default_mutation = mutation_options.index("T790M") if "T790M" in mutation_options else 0
         mutation = st.selectbox(
             "EGFR mutation",
-            sorted(data["mutation"].unique()),
-            help="Only kinase-domain substitutions supported by the available structures are shown.",
+            mutation_options,
+            index=default_mutation,
         )
 
         available_drugs = sorted(
             data.loc[data["mutation"] == mutation, "drug"].unique()
         )
+        default_drug = available_drugs.index("Dacomitinib") if "Dacomitinib" in available_drugs else 0
         drug = st.selectbox(
             "Tyrosine kinase inhibitor",
             available_drugs,
+            index=default_drug,
         )
 
-        run_prediction = st.button(
-            "Run exploratory prediction",
+        run = st.button(
+            "Run model prediction",
             type="primary",
             use_container_width=True,
-        )
-
-        st.caption(
-            "The app uses precomputed structure-derived features for the selected pair."
         )
 
     selected = data[
@@ -443,107 +388,83 @@ if page == "Prediction explorer":
         (data["drug"] == drug)
     ].copy()
 
-    with context_col:
-        st.subheader(f"{mutation} with {drug}")
-        st.write(
-            f"This selection contains **{len(selected)} experimental row(s)**. "
-            "Replicate feature values are averaged before prediction."
-        )
+    has_observed = selected["auc_ratio_vs_wt"].notna().any()
 
-        context_columns = [
-            "position",
-            "distance_to_T790_A",
-            "distance_to_C797_A",
-            "distance_to_ATP_pocket_centroid_A",
-        ]
-        available_context = [
-            column for column in context_columns if column in selected.columns
-        ]
-        context = selected[available_context].mean(numeric_only=True)
+    with right:
+        if has_observed:
+            st.markdown(
+                """
+                <div class="status-card observed-card">
+                    <h4>✓ Observed + predicted pair</h4>
+                    <p>This combination has a structurally generated feature row and an experimental AUC-ratio measurement in the project dataset.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                """
+                <div class="status-card extrapolation-card">
+                    <h4>⚠ Model-only extrapolation</h4>
+                    <p>The structural features were generated for this combination, but no experimental AUC-ratio label exists in the current resistance dataset.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric(
-            "Residue position",
-            f'{int(context.get("position", 0))}',
-        )
-        c2.metric(
-            "Distance to T790",
-            f'{context.get("distance_to_T790_A", np.nan):.1f} Å',
-        )
-        c3.metric(
-            "Distance to C797",
-            f'{context.get("distance_to_C797_A", np.nan):.1f} Å',
-        )
+        context = selected[
+            [
+                column
+                for column in [
+                    "position",
+                    "distance_to_T790_A",
+                    "distance_to_C797_A",
+                    "distance_to_ATP_pocket_centroid_A",
+                ]
+                if column in selected.columns
+            ]
+        ].mean(numeric_only=True)
 
-    if run_prediction:
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Position", f'{int(context.get("position", 0))}')
+        m2.metric("Distance to T790", f'{context.get("distance_to_T790_A", np.nan):.1f} Å')
+        m3.metric("Distance to C797", f'{context.get("distance_to_C797_A", np.nan):.1f} Å')
+
+    if run:
         prediction_input = mean_feature_row(selected)
         prediction = predict_auc_ratio(prediction_input)
+        predicted_auc = float(prediction["predicted_auc_ratio_vs_wt"].iloc[0])
+        label, note = classify_auc(predicted_auc)
 
-        predicted_auc = float(
-            prediction["predicted_auc_ratio_vs_wt"].iloc[0]
-        )
-        observed_auc = float(selected["auc_ratio_vs_wt"].mean())
-        label, threshold_note = classify_auc(predicted_auc)
+        result_cols = st.columns(4)
+        result_cols[0].metric("Predicted AUC ratio vs WT", f"{predicted_auc:.3f}")
+        result_cols[1].metric("Exploratory interpretation", label)
+        result_cols[2].metric("Decision threshold", f"{RESISTANCE_THRESHOLD:.2f}")
 
-        st.markdown(
-            """
-            <div class="result-panel">
-                <strong>Exploratory result</strong><br>
-                The model output is shown alongside the experimental mean for this
-                represented pair. Because this pair comes from the modeling dataset,
-                the prediction should not be interpreted as external validation.
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        if has_observed:
+            observed_auc = float(selected["auc_ratio_vs_wt"].mean())
+            result_cols[3].metric(
+                "Observed mean AUC ratio",
+                f"{observed_auc:.3f}",
+                delta=f"{predicted_auc - observed_auc:+.3f}",
+                delta_color="off",
+            )
+        else:
+            result_cols[3].metric("Experimental outcome", "Unavailable")
 
-        result_1, result_2, result_3, result_4 = st.columns(4)
-        result_1.metric(
-            "Predicted AUC ratio vs WT",
-            f"{predicted_auc:.3f}",
-        )
-        result_2.metric(
-            "Observed mean AUC ratio",
-            f"{observed_auc:.3f}",
-            delta=f"{predicted_auc - observed_auc:+.3f}",
-            delta_color="off",
-        )
-        result_3.metric(
-            "Interpretation",
-            label,
-        )
-        result_4.metric(
-            "Exploratory threshold",
-            f"{RESISTANCE_THRESHOLD:.2f}",
-        )
+        st.caption(note)
 
-        st.caption(threshold_note)
-
-        st.subheader("Structural feature profile")
-        profile_columns = [
-            "delta_sidechain_volume_A3",
-            "delta_local_packing_atoms_6A",
-            "delta_steric_clashes_2A",
-            "delta_protein_drug_atom_contacts_4p5A",
-            "distance_to_ATP_pocket_centroid_A",
-            "mutation_site_DFI",
-            "auxiliary_predicted_mutation_effect",
-        ]
-        profile = normalized_feature_profile(
-            selected,
-            data,
-            profile_columns,
-        )
+        st.subheader("Structural interpretation profile")
+        profile = feature_profile(selected, data)
 
         chart_col, table_col = st.columns([1.35, 1], gap="large")
         with chart_col:
-            chart_frame = profile.set_index("Feature")[
-                ["Relative to dataset median"]
-            ]
-            st.bar_chart(chart_frame, horizontal=True)
+            st.bar_chart(
+                profile.set_index("Feature")[["Relative to matrix median"]],
+                horizontal=True,
+            )
             st.caption(
-                "Values are scaled relative to the median and interquartile range "
-                "of the current 50-row dataset."
+                "Positive values are above the median of the generated mutation–drug matrix; negative values are below it."
             )
 
         with table_col:
@@ -553,136 +474,92 @@ if page == "Prediction explorer":
                 use_container_width=True,
             )
 
-        with st.expander("How should I interpret this prediction?"):
+        with st.expander("What exactly happened when I clicked Predict?"):
             st.markdown(
                 """
-                - A higher predicted AUC ratio indicates greater modeled cell survival
-                  relative to the corresponding WT reference under inhibitor treatment.
-                - The **1.50 threshold** is an exploratory project definition, not a
-                  clinical standard.
-                - The current grouped cross-validation performance is weak for unseen
-                  mutations, so this output is best treated as a visualization of the
-                  pipeline rather than a reliable clinical prediction.
+                1. The app selected the feature vector generated from the corresponding drug-bound EGFR mutant structure.
+                2. It passed that vector through the fitted Random Forest pipeline.
+                3. The displayed prediction was calculated by the model at click time.
+                4. An experimental value is shown separately only when one exists.
                 """
+            )
+
+
+elif page == "Combination coverage":
+    st.header("Mutation–drug coverage")
+
+    coverage = (
+        data.assign(generated="✓")
+        .pivot_table(
+            index="mutation",
+            columns="drug",
+            values="generated",
+            aggfunc="first",
+            fill_value="—",
+        )
+        .reset_index()
+    )
+    st.dataframe(coverage, hide_index=True, use_container_width=True)
+
+    st.subheader("Generated combinations by inhibitor")
+    st.bar_chart(data.groupby("drug").size().rename("generated pairs"))
+
+    if not unsupported.empty:
+        with st.expander("View unsupported or failed combinations"):
+            columns = [
+                c for c in [
+                    "mutation", "drug", "generation_status", "reason"
+                ] if c in unsupported.columns
+            ]
+            st.dataframe(
+                unsupported[columns],
+                hide_index=True,
+                use_container_width=True,
             )
 
 
 elif page == "Model results":
     st.header("Model results")
+
+    cols = st.columns(4)
+    cols[0].metric("Grouped CV MAE", f'{metrics.get("rich_model_grouped_cv_MAE", 0.362):.3f}')
+    cols[1].metric("Grouped CV RMSE", f'{metrics.get("rich_model_grouped_cv_RMSE", 0.483):.3f}')
+    cols[2].metric("Grouped CV R²", f'{metrics.get("rich_model_grouped_cv_R2", -0.259):.3f}')
+    cols[3].metric("Grouped CV Spearman", f'{metrics.get("rich_model_grouped_cv_Spearman", -0.093):.3f}')
+
+    st.warning(
+        "The grouped cross-validated R² is negative. Predictions for unseen mutations are therefore exploratory and currently unreliable."
+    )
+
+    matrix_predictions = predict_auc_ratio(data.copy())
+    predicted_resistant_count = int(matrix_predictions["predicted_resistant"].sum())
     st.write(
-        "The evaluation grouped all measurements from the same mutation together, "
-        "reducing mutation-level leakage between training and testing."
+        f"Across the current generated matrix, **{predicted_resistant_count} of {len(matrix_predictions)}** "
+        "pairs are above the exploratory 1.50 resistant-like threshold. "
+        "Examples include T790M–Dacomitinib and T790M–Afatinib."
     )
 
-    metric_1, metric_2, metric_3, metric_4 = st.columns(4)
-    metric_1.metric(
-        "Grouped CV MAE",
-        f'{metrics.get("rich_model_grouped_cv_MAE", 0.362):.3f}',
-    )
-    metric_2.metric(
-        "Grouped CV RMSE",
-        f'{metrics.get("rich_model_grouped_cv_RMSE", 0.483):.3f}',
-    )
-    metric_3.metric(
-        "Grouped CV R²",
-        f'{metrics.get("rich_model_grouped_cv_R2", -0.259):.3f}',
-    )
-    metric_4.metric(
-        "Grouped CV Spearman",
-        f'{metrics.get("rich_model_grouped_cv_Spearman", -0.093):.3f}',
-    )
-
-    st.subheader("What the metrics mean")
     st.markdown(
         """
-        - **MAE** is the average absolute difference between observed and predicted AUC ratios.
-        - **RMSE** gives larger errors more weight.
-        - **R² below zero** means the model did not outperform a training-fold mean predictor
-          on unseen mutation groups.
-        - **Spearman near zero** means the model did not reliably rank unseen mutation–drug
-          responses.
+        **What is still valuable here?**
+
+        The project demonstrates an end-to-end structural ML workflow and tests whether richer biological representations improve generalization under severe data limitations. The final app does not hide that the current dataset remains the bottleneck.
         """
-    )
-
-    st.subheader("Model development sequence")
-    comparison = pd.DataFrame(
-        {
-            "Representation": [
-                "Original structural model",
-                "Kinase-wide expansion",
-                "Rich interaction model",
-                "Rich + auxiliary mutation score",
-            ],
-            "Added information": [
-                "Local geometry and chemistry",
-                "Kinase landmarks and contact-network context",
-                "Drug chemistry, clashes, contacts, packing, and DFI",
-                "Transfer of general mutation-effect information",
-            ],
-            "Conclusion": [
-                "Working baseline pipeline",
-                "Location alone was insufficient",
-                "Lower error but limited generalization",
-                "Small incremental benefit",
-            ],
-        }
-    )
-    st.dataframe(
-        comparison,
-        hide_index=True,
-        use_container_width=True,
-    )
-
-    st.info(
-        "The main scientific finding is not that the model is clinically predictive. "
-        "It is that a rigorous pipeline can quantify how progressively richer structural "
-        "representations affect generalization under a small-data constraint."
     )
 
 
 elif page == "Pipeline":
     st.header("End-to-end pipeline")
-    st.write(
-        "The project is organized as a reproducible sequence of data, structure, "
-        "feature, and modeling stages."
-    )
 
     steps = [
-        (
-            "1 · Experimental outcome extraction",
-            "Normalized dose-response measurements were parsed from the Hayes workbooks "
-            "and converted into mutation–drug AUC ratios relative to WT.",
-        ),
-        (
-            "2 · Drug-bound structure selection",
-            "Experimentally determined EGFR kinase–inhibitor structures were used for "
-            "erlotinib, afatinib, dacomitinib, and osimertinib.",
-        ),
-        (
-            "3 · Automated mutant generation",
-            "Supported kinase-domain substitutions were introduced into their "
-            "corresponding drug-bound structures.",
-        ),
-        (
-            "4 · Structural feature engineering",
-            "Local chemistry, packing, contacts, kinase landmarks, graph descriptors, "
-            "DFI, and drug physicochemical properties were calculated.",
-        ),
-        (
-            "5 · Auxiliary mutation-effect learning",
-            "A separate model learned general EGFR mutation effects from 4,802 variants "
-            "and supplied an auxiliary score to the resistance model.",
-        ),
-        (
-            "6 · Grouped machine-learning evaluation",
-            "Mutation-grouped cross-validation prevented the same mutation from appearing "
-            "in both training and testing folds.",
-        ),
-        (
-            "7 · Interactive deployment",
-            "The fitted pipeline and precomputed feature table were packaged into this "
-            "Streamlit research interface.",
-        ),
+        ("1 · Experimental assay extraction", "Parse mutation–drug dose-response outcomes from the Hayes workbooks."),
+        ("2 · Drug-bound structure selection", "Use an experimentally determined EGFR–inhibitor structure for each represented drug."),
+        ("3 · Mutant generation", "Introduce each supported mutation into each drug-bound structure."),
+        ("4 · Structural feature calculation", "Calculate local geometry, contacts, packing, kinase landmarks, graph descriptors, DFI, and drug descriptors."),
+        ("5 · Auxiliary learning", "Learn general EGFR mutation effects from 4,802 variants."),
+        ("6 · Resistance modeling", "Predict AUC ratio with mutation-grouped cross-validation."),
+        ("7 · Precompute all supported combinations", "Generate the full deployable mutation–drug feature matrix."),
+        ("8 · Streamlit inference", "Load a generated feature row and calculate a model prediction at click time."),
     ]
 
     for title, description in steps:
@@ -690,38 +567,16 @@ elif page == "Pipeline":
             f"""
             <div class="pipeline-step">
                 <strong>{title}</strong><br>
-                <span class="small-note">{description}</span>
+                <span style="color:#9AA7B4">{description}</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    st.subheader("Repository contents")
-    st.code(
-        """egfr-resistance-predictor/
-├── app.py
-├── src/predict.py
-├── models/
-├── data/
-├── results/
-├── notebooks/
-├── requirements.txt
-└── README.md""",
-        language="text",
-    )
-
 
 elif page == "Batch prediction":
     st.header("Batch prediction")
-    st.write(
-        "Upload rows produced by the same rich-feature pipeline. The model requires "
-        "the feature schema stored in `models/feature_schema.json`."
-    )
-
-    uploaded = st.file_uploader(
-        "Upload a rich-feature CSV",
-        type=["csv"],
-    )
+    st.write("Upload rows produced by the same structural feature pipeline.")
 
     example_path = PROJECT_ROOT / "data" / "example_prediction_rows.csv"
     if example_path.exists():
@@ -732,30 +587,13 @@ elif page == "Batch prediction":
             mime="text/csv",
         )
 
+    uploaded = st.file_uploader("Upload rich-feature CSV", type=["csv"])
+
     if uploaded is not None:
         frame = pd.read_csv(uploaded)
-        st.write(f"Uploaded **{len(frame)} row(s)**.")
-
         try:
             output = predict_auc_ratio(frame)
-            st.success("Prediction completed.")
-            st.dataframe(
-                output[
-                    [
-                        column
-                        for column in [
-                            "mutation",
-                            "drug",
-                            "predicted_auc_ratio_vs_wt",
-                            "predicted_resistant",
-                        ]
-                        if column in output.columns
-                    ]
-                ],
-                use_container_width=True,
-                hide_index=True,
-            )
-
+            st.dataframe(output, use_container_width=True)
             st.download_button(
                 "Download predictions",
                 data=output.to_csv(index=False).encode("utf-8"),
@@ -768,65 +606,35 @@ elif page == "Batch prediction":
 
 elif page == "Limitations":
     st.header("Limitations and responsible use")
+    st.error("Do not use this application to guide cancer treatment.")
 
-    st.error(
-        "This application is not a medical device and must not be used to select "
-        "cancer treatment."
-    )
-
-    limitation_data = pd.DataFrame(
+    limitations = pd.DataFrame(
         {
             "Limitation": [
                 "Small resistance dataset",
-                "Restricted structural coverage",
-                "Static mutant models",
-                "Proxy interaction features",
+                "Limited inhibitor coverage",
+                "Static mutant structures",
+                "Geometry-based interaction proxies",
                 "Weak unseen-mutation performance",
-                "Training-pair exploration",
+                "Precomputed structural matrix",
             ],
-            "Current implication": [
-                "Only 50 supported mutation–drug rows were available.",
-                "Only kinase-domain substitutions present in the chosen PDB structures were modeled.",
+            "Implication": [
+                "Only a small number of labeled mutation–drug rows train the resistance model.",
+                "Only inhibitors with successful reference-structure processing are shown.",
                 "Mutants were not subjected to validated ligand-aware relaxation.",
-                "Hydrogen bonds and clashes are geometry-based rather than energetic calculations.",
-                "Grouped cross-validated R² remained negative.",
-                "Predictions shown for supported pairs are not independent external tests.",
-            ],
-            "Planned improvement": [
-                "Integrate independent EGFR response datasets.",
-                "Add validated structures or carefully modeled missing regions.",
-                "Introduce validated minimization and stability workflows.",
-                "Add pocket volume, stability, and interaction-energy descriptors.",
-                "Retrain with more independent mutation–drug pairs.",
-                "Add external validation and calibrated uncertainty.",
+                "Contacts, clashes, and polar interactions are not binding free energies.",
+                "Grouped cross-validated R² remains negative.",
+                "Structural calculations occur offline once; the website performs fast model inference.",
             ],
         }
     )
-
-    st.dataframe(
-        limitation_data,
-        hide_index=True,
-        use_container_width=True,
-    )
-
-    st.subheader("What this project demonstrates")
-    st.markdown(
-        """
-        - Reproducible processing of real biological assay data
-        - Automated protein mutation modeling
-        - Physics-informed and structure-informed feature engineering
-        - Transfer of information from a larger auxiliary mutation dataset
-        - Leakage-aware machine-learning validation
-        - Deployment of a modular research application
-        """
-    )
+    st.dataframe(limitations, hide_index=True, use_container_width=True)
 
 
 st.markdown(
     """
     <div class="footer">
-        Built as an educational computational biology project ·
-        Structural predictions are exploratory and not clinically validated
+        Educational computational biology project · Structurally generated features · Exploratory machine-learning predictions
     </div>
     """,
     unsafe_allow_html=True,

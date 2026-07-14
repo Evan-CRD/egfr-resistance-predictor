@@ -163,3 +163,24 @@ A separate model learns general mutation-effect scores from 4,802 EGFR kinase va
 ## Responsible-use statement
 
 This software is intended for education and computational research. It is not a clinical decision-support system, medical device, or substitute for professional oncology guidance.
+
+
+## Version 2 prediction behavior
+
+The deployed application now uses a complete precomputed matrix of successfully generated mutation–drug structural feature vectors.
+
+When a user selects a mutation and drug:
+
+1. the app retrieves the structural feature vector generated for that exact pair,
+2. the fitted model calculates a prediction at click time,
+3. the app separately reports whether an experimental outcome exists,
+4. unlabeled combinations are marked as **model-only extrapolations**.
+
+The app does not return a stored experimental outcome as the prediction. Structural calculations are performed offline once to keep deployed inference fast and stable.
+
+## Version 2.1 fixes
+
+- fixes replicate-row averaging under newer pandas versions
+- defaults to the resistant-like T790M–Dacomitinib example
+- exposes all successfully generated drugs for each mutation
+- reports how many generated pairs cross the exploratory resistance threshold

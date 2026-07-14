@@ -1,0 +1,53 @@
+mutation,drug,pdb_id,supported,chain,wt,position,mutant,reason,generation_status,output_pdb
+C797S,Afatinib,4G5J,True,A,C,797,S,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_C797S.pdb
+C797S,Dacomitinib,4I23,True,A,C,797,S,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_C797S.pdb
+C797S,Erlotinib,1M17,False,,C,797,S,"WT mismatch: [('A', 'I')]",not_generated,
+C797S,Osimertinib,4ZAU,True,A,C,797,S,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_C797S.pdb
+E709A,Afatinib,4G5J,True,A,E,709,A,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_E709A.pdb
+E709A,Dacomitinib,4I23,True,A,E,709,A,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_E709A.pdb
+E709A,Erlotinib,1M17,False,,E,709,A,"WT mismatch: [('A', 'P')]",not_generated,
+E709A,Osimertinib,4ZAU,True,A,E,709,A,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_E709A.pdb
+G719A,Afatinib,4G5J,True,A,G,719,A,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_G719A.pdb
+G719A,Dacomitinib,4I23,True,A,G,719,A,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_G719A.pdb
+G719A,Erlotinib,1M17,False,,G,719,A,"WT mismatch: [('A', 'A')]",not_generated,
+G719A,Osimertinib,4ZAU,True,A,G,719,A,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_G719A.pdb
+G779F,Afatinib,4G5J,True,A,G,779,F,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_G779F.pdb
+G779F,Dacomitinib,4I23,True,A,G,779,F,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_G779F.pdb
+G779F,Erlotinib,1M17,False,,G,779,F,"WT mismatch: [('A', 'R')]",not_generated,
+G779F,Osimertinib,4ZAU,True,A,G,779,F,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_G779F.pdb
+H773R,Afatinib,4G5J,True,A,H,773,R,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_H773R.pdb
+H773R,Dacomitinib,4I23,True,A,H,773,R,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_H773R.pdb
+H773R,Erlotinib,1M17,False,,H,773,R,"WT mismatch: [('A', 'C')]",not_generated,
+H773R,Osimertinib,4ZAU,True,A,H,773,R,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_H773R.pdb
+L747P,Afatinib,4G5J,False,,L,747,P,residue number absent from reference PDB,not_generated,
+L747P,Dacomitinib,4I23,True,A,L,747,P,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_L747P.pdb
+L747P,Erlotinib,1M17,False,,L,747,P,"WT mismatch: [('A', 'N')]",not_generated,
+L747P,Osimertinib,4ZAU,False,,L,747,P,residue number absent from reference PDB,not_generated,
+L858R,Afatinib,4G5J,True,A,L,858,R,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_L858R.pdb
+L858R,Dacomitinib,4I23,True,A,L,858,R,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_L858R.pdb
+L858R,Erlotinib,1M17,False,,L,858,R,"WT mismatch: [('A', 'A')]",not_generated,
+L858R,Osimertinib,4ZAU,True,A,L,858,R,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_L858R.pdb
+L861K,Afatinib,4G5J,True,A,L,861,K,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_L861K.pdb
+L861K,Dacomitinib,4I23,True,A,L,861,K,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_L861K.pdb
+L861K,Erlotinib,1M17,False,,L,861,K,"WT mismatch: [('A', 'S')]",not_generated,
+L861K,Osimertinib,4ZAU,True,A,L,861,K,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_L861K.pdb
+S768I,Afatinib,4G5J,True,A,S,768,I,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_S768I.pdb
+S768I,Dacomitinib,4I23,True,A,S,768,I,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_S768I.pdb
+S768I,Erlotinib,1M17,False,,S,768,I,"WT mismatch: [('A', 'L')]",not_generated,
+S768I,Osimertinib,4ZAU,True,A,S,768,I,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_S768I.pdb
+T725M,Afatinib,4G5J,True,A,T,725,M,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_T725M.pdb
+T725M,Dacomitinib,4I23,True,A,T,725,M,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_T725M.pdb
+T725M,Erlotinib,1M17,False,,T,725,M,"WT mismatch: [('A', 'E')]",not_generated,
+T725M,Osimertinib,4ZAU,True,A,T,725,M,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_T725M.pdb
+T790M,Afatinib,4G5J,True,A,T,790,M,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_T790M.pdb
+T790M,Dacomitinib,4I23,True,A,T,790,M,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_T790M.pdb
+T790M,Erlotinib,1M17,False,,T,790,M,"WT mismatch: [('A', 'L')]",not_generated,
+T790M,Osimertinib,4ZAU,True,A,T,790,M,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_T790M.pdb
+V769M,Afatinib,4G5J,True,A,V,769,M,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_V769M.pdb
+V769M,Dacomitinib,4I23,True,A,V,769,M,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_V769M.pdb
+V769M,Erlotinib,1M17,False,,V,769,M,"WT mismatch: [('A', 'M')]",not_generated,
+V769M,Osimertinib,4ZAU,True,A,V,769,M,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_V769M.pdb
+V774M,Afatinib,4G5J,True,A,V,774,M,supported,generated,all_pair_mutant_structures/Afatinib_4G5J_V774M.pdb
+V774M,Dacomitinib,4I23,True,A,V,774,M,supported,generated,all_pair_mutant_structures/Dacomitinib_4I23_V774M.pdb
+V774M,Erlotinib,1M17,False,,V,774,M,"WT mismatch: [('A', 'L')]",not_generated,
+V774M,Osimertinib,4ZAU,True,A,V,774,M,supported,generated,all_pair_mutant_structures/Osimertinib_4ZAU_V774M.pdb
