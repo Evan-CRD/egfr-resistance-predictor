@@ -1,5 +1,5 @@
 {
-  "workbook": "/mnt/data/2021.8.12 Figure 2 Source Data.xlsx",
+  "workbook": "/mnt/data/egfr_website/2021.8.12 Figure 2 Source Data.xlsx",
   "target": "median log(mutant IC50 / wild-type IC50)",
   "target_interpretation": {
     "positive": "relative resistance versus WT",

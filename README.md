@@ -1,25 +1,26 @@
-# EGFR Structure–Function Drug Response Model
+# EGFR Structure–Function Drug Response Website
 
-This application predicts relative TKI response using drug identity and published EGFR structure–function groups.
+This is a complete Streamlit deployment package.
 
-## Main result
+## Deploy
 
-Using 5-fold mutation-grouped cross-validation across 77 mutations, 18 drugs, and 1,380 mutation–drug rows:
+1. Upload every file and folder in this package to the root of the GitHub repository.
+2. Keep the `strong_model_outputs` directory and all of its files.
+3. Set the Streamlit main file path to `app.py`.
+4. Reboot the app after the commit.
 
-- Drug + exon: R² = 0.224; Spearman = 0.482
-- Drug + structure–function group: R² = 0.427; Spearman = 0.678
+The mutation selector now automatically assigns and locks the published structure–function group.
 
-The main conclusion is that biologically informed structure–function groups predict held-out experimental TKI response better than exon location alone.
+## Validated model performance
 
-## Target
+- R²: 0.427
+- Spearman: 0.678
+- MAE: 0.702
+- RMSE: 0.930
+- Best feature set: `drug_plus_structure`
 
-Median log2(mutant IC50 / WT IC50). Positive values indicate relative resistance; negative values indicate relative sensitivity.
+## Important limitation
 
-## Run
+Because the final selected model uses only drug identity and structural group, mutations in the same group receive the same predicted response profile.
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-Experimental research tool only; not clinical advice.
+This is an experimental research tool and not clinical advice.
