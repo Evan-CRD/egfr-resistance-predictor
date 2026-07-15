@@ -1,0 +1,69 @@
+{
+  "workbook": "/mnt/data/2021.8.12 Figure 2 Source Data.xlsx",
+  "target": "median log(mutant IC50 / wild-type IC50)",
+  "target_interpretation": {
+    "positive": "relative resistance versus WT",
+    "negative": "relative sensitivity versus WT",
+    "zero": "similar IC50 to WT"
+  },
+  "n_mutations": 77,
+  "n_drugs": 18,
+  "n_rows": 1380,
+  "best_feature_set": "drug_plus_structure",
+  "feature_columns": [
+    "drug",
+    "structure_group"
+  ],
+  "categorical_columns": [
+    "drug",
+    "structure_group"
+  ],
+  "parameters": {
+    "iterations": 250,
+    "depth": 7,
+    "learning_rate": 0.04,
+    "l2_leaf_reg": 20.0,
+    "random_strength": 1.0,
+    "bagging_temperature": 0.5
+  },
+  "cross_validated_metrics": {
+    "MAE": 0.7021834824613993,
+    "RMSE": 0.9296118777043815,
+    "R2": 0.4271390654170576,
+    "Spearman": 0.6779362085326052,
+    "mean_per_drug_MAE": 0.7022785256077069,
+    "mean_per_drug_RMSE": 0.9210711809338075,
+    "mean_per_drug_R2": 0.27369210457871596,
+    "mean_per_drug_Spearman": 0.5329279170638167
+  },
+  "known_drugs": [
+    "AZ5104",
+    "AZD3759",
+    "Afatinib",
+    "CLN-081",
+    "Dacomitinib",
+    "Erlotinib",
+    "Gefitinib",
+    "Lazertinib",
+    "Mobocertinib",
+    "Naquotinib",
+    "Nazartinib",
+    "Neratinib",
+    "Olmutinib",
+    "Osimertinib",
+    "Poziotinib",
+    "Rociletinib",
+    "Sapatinib",
+    "Tarlox-TKI"
+  ],
+  "known_structure_groups": [
+    "Classical-Like",
+    "Ex20ins-L",
+    "PACC",
+    "T790M-like-3R",
+    "T790M-like-3S"
+  ],
+  "random_seed": 20260714,
+  "validation": "5-fold GroupKFold with mutation as the grouping variable",
+  "limitation": "The model predicts responses for drugs represented in the workbook and requires a structure-function group. It does not infer resistance directly from a raw PDB structure and is not a clinical treatment recommendation."
+}

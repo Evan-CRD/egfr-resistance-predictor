@@ -1,15 +1,14 @@
-# Apply Version 3
+# Update your GitHub repository
 
-Upload/replace these paths in the GitHub repository:
+Replace/add:
 
 - `app.py`
+- `requirements.txt`
 - `README.md`
 - `.streamlit/config.toml`
+- `src/strong_predict.py`
+- the entire `strong_model_outputs/` folder
+- `train_strong_egfr_model.py`
+- `predict_egfr_profile.py`
 
-The data, model, and `src/` files remain unchanged.
-
-After committing:
-1. Open Streamlit Community Cloud.
-2. Open the app settings.
-3. Reboot the app.
-4. Confirm the sidebar says `Version 3.0 · structure-first interface`.
+Commit the changes and reboot the Streamlit app. Confirm that the sidebar says **Version 4.0**.
