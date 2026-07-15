@@ -450,11 +450,11 @@ elif page == "Validation Results":
 
 
 elif page == "Dataset Source":
-    st.header("Dataset source and experimental design")
+    st.header("Dataset source")
 
     st.markdown(
         f"""
-### Primary source
+This project uses the Figure 2 source data from:
 
 **Robichaux, J. P. et al. _Structure-based classification predicts drug
 response in EGFR-mutant NSCLC._ Nature 597, 732–737 (2021).**
@@ -465,89 +465,42 @@ response in EGFR-mutant NSCLC._ Nature 597, 732–737 (2021).**
     )
 
     cols = st.columns(4)
-    cols[0].metric("EGFR mutations/cell lines", "76–77")
-    cols[1].metric("TKIs screened", "18")
-    cols[2].metric("Rows used here", f"{metadata['n_rows']:,}")
-    cols[3].metric("Replicates summarized", "Median of 3")
+    cols[0].metric("Mutation labels", f"{metadata['n_mutations']}")
+    cols[1].metric("TKIs", f"{metadata['n_drugs']}")
+    cols[2].metric("Mutation–drug rows", f"{metadata['n_rows']:,}")
+    cols[3].metric("Response used", "Median replicate")
 
     st.markdown(
         """
-### How the experimental response data were generated
-
-1. **Create mutant EGFR cell lines.** The authors introduced different mutant
-   EGFR genes into Ba/F3 cells and selected cells expressing EGFR.
-
-2. **Treat each cell line with EGFR inhibitors.** Cells were plated in
-   384-well plates and exposed to seven concentrations of each TKI or a DMSO
-   control.
-
-3. **Measure cell viability after 72 hours.** CellTiter-Glo luminescence was
-   used to measure how many cells remained viable.
-
-4. **Fit dose–response curves.** A nonlinear dose–response curve was fit for
-   each mutation–drug pair, and the IC50—the concentration required for 50%
-   inhibition—was estimated.
-
-5. **Normalize each mutant to wild-type EGFR.** The mutant IC50 was divided by
-   the WT IC50 for the same drug. The published heat map used the logarithm of
-   this mutant/WT ratio.
-
-6. **Repeat the measurements.** Drug screens were performed in technical
-   triplicate and in duplicate or triplicate biological experiments. Our
-   pipeline uses the median response supplied in the Figure 2 source data.
+The published dataset provides the mutation, exon assignment,
+structure–function group, drug identity, and relative drug-response
+measurements used in this project. The published structure–function labels
+were used as provided by the study; they were not created by our machine
+learning model.
 """
     )
 
-    st.markdown(
-        """
-### How the structure–function groups were assigned
-
-The groups were **not invented by our CatBoost model**. The paper's authors
-combined structural mapping with drug-sensitivity patterns:
-
-- They mapped mutations onto experimentally determined EGFR structures and
-  homology models.
-- They asked whether each mutation was distant from the binding pocket, in the
-  hydrophobic core, in an exon 20 loop, or likely to move the P-loop and/or
-  αC-helix.
-- They used established mutations—such as L858R, T790M, and known exon 20
-  insertions—as structural reference cases.
-- They then checked whether mutations assigned to the same group clustered
-  together based on their measured responses to the 18 TKIs.
-- Drug-sensitivity data further separated subgroups such as
-  **T790M-like-3S** (third-generation sensitive) and
-  **T790M-like-3R** (third-generation resistant).
-
-The four major biological classes were Classical-Like, T790M-like,
-Ex20ins-L, and PACC. This website retains the two T790M-like sensitivity
-subclasses as separate labels, giving five displayed categories.
-"""
-    )
-
-    st.subheader("Dataset used by this project")
+    st.subheader("Dataset preview")
+    preview_columns = [
+        "mutation",
+        "structure_group",
+        "exon1",
+        "exon2",
+        "exon3",
+        "drug",
+        "response",
+        "n_replicates",
+    ]
     st.dataframe(
-        data[
-            [
-                "mutation",
-                "structure_group",
-                "exon1",
-                "exon2",
-                "exon3",
-                "drug",
-                "response",
-                "replicate_mean",
-                "replicate_sd",
-                "n_replicates",
-            ]
-        ].head(100),
+        data[preview_columns].head(100),
         hide_index=True,
         use_container_width=True,
     )
-    st.caption("The table preview shows the first 100 rows.")
+    st.caption("Showing the first 100 cleaned mutation–drug rows.")
 
     if SOURCE_WORKBOOK.exists():
         st.download_button(
-            "Download the Nature Figure 2 source-data workbook",
+            "Download the original Figure 2 source-data workbook",
             SOURCE_WORKBOOK.read_bytes(),
             SOURCE_WORKBOOK.name,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -562,185 +515,200 @@ subclasses as separate labels, giving five displayed categories.
 
 
 elif page == "Detailed Pipeline":
-    st.header("Detailed end-to-end machine-learning pipeline")
+    st.header("Machine-learning pipeline")
 
-    pipeline_steps = [
-        (
-            "1 · Read Panel A of the Nature workbook",
-            """
-The training script opens the Excel worksheet named **Panel A** without
-assuming a conventional header row. It reads mutation names, published
-structure–function groups, up to three exon fields, drug names, and the
-replicate response measurements. It verifies that the workbook has the
-expected layout and stops if the sheet cannot be interpreted.
-""",
-        ),
-        (
-            "2 · Convert the wide spreadsheet into long format",
-            """
-The source worksheet stores multiple drugs across columns. The script converts
-it into one row per **mutation–drug pair**. Each row contains the mutation,
-drug, structural group, exon fields, replicate summary statistics, and the
-response target. This produces 1,380 usable mutation–drug rows representing
-77 mutation labels and 18 drugs.
-""",
-        ),
-        (
-            "3 · Aggregate experimental replicates",
-            """
-For each mutation–drug pair, the available replicate measurements are
-converted to numbers. The **median** becomes the training target because it is
-less sensitive to one unusually high or low replicate. The script also saves
-the replicate mean, standard deviation, and number of replicates for quality
-checking.
-""",
-        ),
-        (
-            "4 · Define the prediction target",
-            """
-The response is the published logarithm of the mutant-to-WT IC50 ratio. A
-positive value means the mutant requires more drug than WT and is relatively
-resistant. A negative value means the mutant requires less drug and is
-relatively sensitive. Zero means mutant and WT have similar IC50 values.
-""",
-        ),
-        (
-            "5 · Derive optional mutation descriptors",
-            """
-The script parses mutation names to extract the number of mutation components,
-residue positions, whether the variant contains an insertion, duplication, or
-deletion, and indicator variables for common mutations such as T790M, C797S,
-L858R, and G719X. For simple substitutions, it calculates approximate changes
-in amino-acid hydropathy, volume, charge, aromaticity, and polarity.
-""",
-        ),
-        (
-            "6 · Construct five competing feature sets",
-            """
-The model does not assume in advance that the richest feature set is best. It
-compares: **drug only**, **drug + exon**, **drug + structure group**,
-**drug + structure + exon**, and a **mechanism-enhanced** set containing all
-of those fields plus the mutation descriptors. This directly tests whether
-structural grouping adds more predictive information than exon location.
-""",
-        ),
-        (
-            "7 · Prepare categorical and numerical features",
-            """
-Drug, structural group, and exon fields are treated as categorical variables.
-CatBoost receives those categories directly rather than requiring manual
-one-hot encoding. Numerical features are converted safely, and missing values
-are filled using the median of the available values or zero when no median is
-available.
-""",
-        ),
-        (
-            "8 · Perform five-fold GroupKFold validation by mutation",
-            """
-The grouping variable is the mutation name. All 18 drug measurements for a
-mutation remain in the same fold. During each validation round, the model is
-trained on four groups of mutations and tested on the remaining group. This
-prevents rows from the same mutation from appearing in both training and test
-data and provides a realistic test of performance on unseen mutations.
-""",
-        ),
-        (
-            "9 · Train CatBoost regressors",
-            """
-Each candidate is a CatBoost regression model optimized for RMSE while
-reporting MAE. CatBoost builds decision trees sequentially, with later trees
-correcting errors made by earlier trees. The base model uses controlled tree
-depth, learning rate, L2 regularization, random strength, bagging temperature,
-and a fixed random seed for reproducibility.
-""",
-        ),
-        (
-            "10 · Compare models using four validation metrics",
-            """
-For every feature set, the script calculates **MAE**, **RMSE**, **R²**, and
-**Spearman correlation** across all out-of-fold predictions. It also calculates
-the same metrics separately for each drug so that pooled performance is not
-dominated only by differences among drugs.
-""",
-        ),
-        (
-            "11 · Select and tune the best feature representation",
-            """
-Feature sets are ranked primarily by held-out MAE. Only the winning
-representation is taken into a second tuning stage, where alternative tree
-depths, regularization values, and random-strength settings are evaluated
-using the same mutation-held-out design. This avoids tuning every model
-excessively on a small dataset.
-""",
-        ),
-        (
-            "12 · Save honest out-of-fold predictions",
-            """
-The file **best_model_oof_predictions.csv** stores, for every mutation–drug
-pair, the experimental response and the prediction generated while that
-mutation was excluded from training. These values power the first website page
-and the validation scatter plot.
-""",
-        ),
-        (
-            "13 · Retrain the final deployed model",
-            """
-After validation and tuning are complete, the selected CatBoost model is
-trained once more using all available rows. This final model is saved as
-**best_egfr_catboost_model.cbm** and is used for deployment. Its selected
-inputs are drug identity and structure–function group.
-""",
-        ),
-        (
-            "14 · Save outputs needed for reproducibility",
-            """
-The pipeline exports the cleaned dataset, feature-set comparison, fold
-metrics, per-drug metrics, tuning results, feature importance, out-of-fold
-predictions, trained model, and a JSON metadata file describing the target,
-features, parameters, known drugs, structural groups, random seed, validation
-design, and limitations.
-""",
-        ),
-        (
-            "15 · Deploy with biologically valid inputs",
-            """
-The website reads the mutation-to-group mapping from the cleaned published
-data. Selecting a mutation automatically assigns its structural group and exon
-information. The group is locked so users cannot create biologically
-unsupported mutation–group combinations. The website displays both measured
-experimental values and honest held-out predictions.
-""",
-        ),
-    ]
-
-    for index, (title, description) in enumerate(pipeline_steps, start=1):
-        st.markdown(
-            f"""
-<div class="step">
-<div class="step-number">Pipeline stage {index}</div>
-<strong>{title}</strong><br><br>
-{description}
-</div>
-""",
-            unsafe_allow_html=True,
-        )
-
-    st.subheader("Final selected model")
-    st.json(
-        {
-            "best_feature_set": metadata["best_feature_set"],
-            "feature_columns": metadata["feature_columns"],
-            "parameters": metadata["parameters"],
-            "validation": metadata["validation"],
-            "cross_validated_metrics": metadata["cross_validated_metrics"],
-        }
+    st.markdown(
+        """
+The project follows four main stages. Open each section for a little more
+detail.
+"""
     )
 
-    st.subheader("Hyperparameter candidates")
-    st.dataframe(
-        tuning.sort_values("MAE"),
-        hide_index=True,
+    st.graphviz_chart(
+        """
+digraph Pipeline {
+    rankdir=LR;
+    graph [bgcolor="transparent", pad="0.25", nodesep="0.45", ranksep="0.7"];
+    node [shape=box, style="rounded,filled", fillcolor="#101720",
+          color="#42d8e8", fontcolor="white", fontname="Arial",
+          margin="0.18,0.12"];
+    edge [color="#34d5a7", penwidth=2, arrowsize=0.8];
+
+    A [label="1. Dataset"];
+    B [label="2. Median replicate\nresponse"];
+    C [label="3. Five candidate\nfeature sets"];
+    D [label="4. CatBoost\nregression"];
+    E [label="5. Mutation-held-out\nvalidation"];
+
+    A -> B -> C -> D -> E;
+}
+""",
         use_container_width=True,
+    )
+
+    with st.expander(
+        "1 · Dataset: mutation, structural group, exons, drug, and relative drug response",
+        expanded=True,
+    ):
+        st.markdown(
+            """
+The source spreadsheet is converted into **one row per mutation–drug pair**.
+Each row includes:
+
+- the EGFR mutation;
+- its published structure–function group;
+- up to three exon fields;
+- the TKI used;
+- the measured relative drug response.
+
+The response is the published log ratio comparing mutant and wild-type IC50.
+Positive values indicate relative resistance, while negative values indicate
+relative sensitivity.
+"""
+        )
+
+        sample = data[
+            ["mutation", "structure_group", "exon1", "drug", "response"]
+        ].head(12)
+        st.dataframe(sample, hide_index=True, use_container_width=True)
+
+    with st.expander(
+        "2 · Median of the available replicate values",
+        expanded=False,
+    ):
+        st.markdown(
+            """
+Several replicate measurements may be available for the same mutation–drug
+pair. The pipeline uses their **median** as the response given to the model.
+
+The median reduces the influence of one unusually high or low replicate. The
+mean, standard deviation, and number of replicates are also saved for quality
+checking.
+"""
+        )
+
+        replicate_example = (
+            data[["mutation", "drug", "replicate_mean", "replicate_sd", "response"]]
+            .dropna()
+            .head(20)
+            .rename(
+                columns={
+                    "replicate_mean": "Replicate mean",
+                    "replicate_sd": "Replicate SD",
+                    "response": "Median used as target",
+                }
+            )
+        )
+        st.dataframe(
+            replicate_example,
+            hide_index=True,
+            use_container_width=True,
+        )
+
+    with st.expander(
+        "3 · Generate five candidate feature sets",
+        expanded=False,
+    ):
+        st.markdown(
+            """
+Five versions of the input information were tested:
+
+1. **Drug only** — baseline model.
+2. **Drug + exon** — mutation location in the gene.
+3. **Drug + structure group** — published structural mechanism.
+4. **Drug + structure group + exon** — tests whether exon adds information
+   after structure is known.
+5. **Mechanism enhanced** — adds simple mutation-name and amino-acid
+   descriptors.
+
+Every candidate was evaluated using the same validation procedure so the
+comparison was fair.
+"""
+        )
+
+        feature_chart = comparison[
+            ["model", "MAE", "R2", "Spearman"]
+        ].set_index("model")
+        st.bar_chart(feature_chart[["R2", "Spearman"]])
+
+        st.dataframe(
+            comparison[
+                ["model", "n_features", "MAE", "RMSE", "R2", "Spearman"]
+            ],
+            hide_index=True,
+            use_container_width=True,
+        )
+
+    with st.expander(
+        "4 · CatBoost regression",
+        expanded=False,
+    ):
+        st.markdown(
+            """
+CatBoost is a boosted decision-tree regression model. It builds trees
+sequentially, and each new tree tries to correct errors left by the earlier
+trees.
+
+It is useful here because the most important inputs—drug, exon, and structural
+group—are categorical labels. CatBoost can use these labels directly and can
+learn nonlinear interactions such as a particular drug behaving differently
+for different structural groups.
+"""
+        )
+
+        st.json(
+            {
+                "selected_feature_set": metadata["best_feature_set"],
+                "selected_features": metadata["feature_columns"],
+                "parameters": metadata["parameters"],
+            }
+        )
+
+    with st.expander(
+        "5 · Mutation-held-out validation",
+        expanded=False,
+    ):
+        st.markdown(
+            """
+All rows belonging to the same mutation are kept together. When a mutation is
+used for testing, none of its drug-response measurements are present in the
+training data.
+
+This tests whether the model can generalize to a mutation it has not seen,
+rather than simply remembering other drug measurements for the same mutation.
+The process is repeated across five folds, producing an out-of-fold prediction
+for every row.
+"""
+        )
+
+        metrics = metadata["cross_validated_metrics"]
+        cols = st.columns(4)
+        cols[0].metric("R²", f"{metrics['R2']:.3f}")
+        cols[1].metric("Spearman", f"{metrics['Spearman']:.3f}")
+        cols[2].metric("MAE", f"{metrics['MAE']:.3f}")
+        cols[3].metric("RMSE", f"{metrics['RMSE']:.3f}")
+
+        validation_plot = oof[["response", "prediction"]].rename(
+            columns={
+                "response": "Experimental response",
+                "prediction": "Held-out prediction",
+            }
+        )
+        st.scatter_chart(
+            validation_plot,
+            x="Experimental response",
+            y="Held-out prediction",
+        )
+
+    st.markdown(
+        """
+<div class="result">
+<strong>Final outcome:</strong> Drug identity plus the published
+structure–function group was the best-performing feature representation and
+was retrained on the full dataset for deployment.
+</div>
+""",
+        unsafe_allow_html=True,
     )
 
 
