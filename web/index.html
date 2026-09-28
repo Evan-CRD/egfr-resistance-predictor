@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive EGFR structure–function drug-response model using mutation-held-out predictions from published EGFR TKI response data.">
+  <title>EGFR TKI Response Model</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">🧬 <span>EGFR Model</span></div>
+    <nav>
+      <button class="nav active" data-page="prediction">Prediction</button>
+      <button class="nav" data-page="comparison">Model Comparison</button>
+      <button class="nav" data-page="validation">Validation Results</button>
+      <button class="nav" data-page="source">Dataset Source</button>
+      <button class="nav" data-page="pipeline">Detailed Pipeline</button>
+      <button class="nav" data-page="how">How It Works</button>
+      <button class="nav" data-page="limitations">Limitations</button>
+    </nav>
+    <div class="side-bottom">
+      <a href="https://github.com/Evan-CRD/egfr-resistance-predictor" target="_blank" rel="noopener">View source on GitHub ↗</a>
+      <small>Static portfolio edition · Netlify-ready</small>
+    </div>
+  </aside>
+
+  <main>
+    <section class="hero">
+      <div class="kicker">Machine learning · EGFR · TKI response</div>
+      <h1>EGFR Structure–Function Drug Response Model</h1>
+      <p>Explore experimental EGFR inhibitor response and honest mutation-held-out predictions, and compare structural versus exon-based biological representations.</p>
+    </section>
+
+    <div id="status" class="notice">Loading project data from GitHub…</div>
+
+    <section id="prediction" class="page active">
+      <h2>Experimental and predicted drug-response profile</h2>
+      <div class="controls">
+        <label>EGFR mutation
+          <select id="mutationSelect"></select>
+        </label>
+        <label>Published structure–function group
+          <input id="groupField" disabled>
+        </label>
+        <label>Published exon assignment
+          <input id="exonField" disabled>
+        </label>
+      </div>
+      <div id="mutationNote" class="note"></div>
+      <button id="showProfile" class="primary">Show experimental and predicted values</button>
+
+      <div id="profileResults" class="hidden">
+        <div class="metrics">
+          <div class="metric"><span>Structure class</span><strong id="mGroup">—</strong></div>
+          <div class="metric"><span>Drugs with data</span><strong id="mDrugs">—</strong></div>
+          <div class="metric"><span>Mutation-specific MAE</span><strong id="mMae">—</strong></div>
+          <div class="metric"><span>Mutation-specific Spearman</span><strong id="mSpearman">—</strong></div>
+        </div>
+        <div class="result"><strong>What is being compared?</strong><br>Experimental value is the measured log₂(mutant IC50 / WT IC50). Held-out prediction was generated when the entire mutation was absent from model training, making it the appropriate validation comparison.</div>
+        <h3>Drug-response profile</h3>
+        <div id="profileChart" class="chart"></div>
+        <div class="table-wrap"><table id="profileTable"></table></div>
+        <button id="downloadCsv" class="secondary">Download this profile (.csv)</button>
+      </div>
+    </section>
+
+    <section id="comparison" class="page">
+      <h2>Which biological representation predicts drug response best?</h2>
+      <div id="comparisonMetrics" class="metrics"></div>
+      <div class="result"><strong>Model comparison:</strong> Candidate feature sets are evaluated under the same mutation-held-out validation procedure.</div>
+      <div id="comparisonChart" class="chart"></div>
+      <div class="table-wrap"><table id="comparisonTable"></table></div>
+    </section>
+
+    <section id="validation" class="page">
+      <h2>Mutation-held-out validation</h2>
+      <div id="validationMetrics" class="metrics"></div>
+      <div class="note">All measurements for each mutation are kept in the same fold. Every held-out prediction shown here was generated when that mutation was absent from training.</div>
+      <h3>Experimental vs held-out prediction</h3>
+      <div id="scatterPlot" class="scatter"></div>
+    </section>
+
+    <section id="source" class="page">
+      <h2>Dataset source</h2>
+      <p>This project uses Figure 2 source data from Robichaux et al., <em>Structure-based classification predicts drug response in EGFR-mutant NSCLC</em>, Nature 597, 732–737 (2021).</p>
+      <p><a href="https://www.nature.com/articles/s41586-021-03898-1" target="_blank" rel="noopener">Open the Nature paper ↗</a> &nbsp; <a href="https://github.com/MD-Anderson-Bioinformatics/EGFR-Structure-Function-Nature-Manuscript" target="_blank" rel="noopener">Authors' analysis repository ↗</a></p>
+      <div id="sourceMetrics" class="metrics"></div>
+      <p>The published structure–function labels are used as provided by the study; they are not created by this machine-learning model.</p>
+    </section>
+
+    <section id="pipeline" class="page">
+      <h2>Machine-learning pipeline</h2>
+      <div class="pipeline">
+        <div>1<br><b>Dataset</b></div><span>→</span><div>2<br><b>Median replicate response</b></div><span>→</span><div>3<br><b>Candidate feature sets</b></div><span>→</span><div>4<br><b>CatBoost regression</b></div><span>→</span><div>5<br><b>Mutation-held-out validation</b></div>
+      </div>
+      <details open><summary>1 · Dataset</summary><p>One row per mutation–drug pair, including EGFR mutation, published structure–function group, exon assignment, TKI, and relative drug response.</p></details>
+      <details><summary>2 · Replicate response</summary><p>The pipeline uses the median of available replicate measurements, reducing the influence of unusually high or low measurements.</p></details>
+      <details><summary>3 · Candidate feature sets</summary><p>Drug-only, drug + exon, drug + structure group, drug + structure + exon, and a mechanism-enhanced representation were compared using the same validation procedure.</p></details>
+      <details><summary>4 · CatBoost regression</summary><p>CatBoost boosted decision trees can directly use categorical labels and learn nonlinear interactions between drug identity and biological representation.</p></details>
+      <details><summary>5 · Mutation-held-out validation</summary><p>All rows for a mutation remain together. When that mutation is tested, none of its drug-response measurements are present in training.</p></details>
+    </section>
+
+    <section id="how" class="page">
+      <h2>What the model learns</h2>
+      <h3>Prediction target</h3>
+      <p>The target is log₂(mutant IC50 / wild-type IC50). A value of 0 indicates similar IC50, +1 corresponds to approximately twofold higher mutant IC50, and −1 to approximately half the WT IC50.</p>
+      <h3>Selected biological inputs</h3>
+      <p>The project evaluates drug identity together with published EGFR structural and exon-based representations. The structural class is locked to the published mutation assignment to avoid unsupported mutation–class combinations.</p>
+      <h3>Why held-out predictions?</h3>
+      <p>They test generalization to mutations not seen during training rather than allowing the model to benefit from other measurements of the same mutation.</p>
+    </section>
+
+    <section id="limitations" class="page">
+      <h2>Limitations and responsible interpretation</h2>
+      <div class="warning">This is an experimental relative-response model, not a clinical treatment recommendation.</div>
+      <ul>
+        <li>The model uses published expert-defined structural labels; it does not infer structural class from a raw PDB structure.</li>
+        <li>Results are based on the source study and should not be interpreted as patient-specific treatment predictions.</li>
+        <li>This static portfolio edition displays precomputed mutation-held-out predictions. The Python repository contains the full modeling workflow.</li>
+      </ul>
+    </section>
+
+    <footer>EGFR Structure–Function Drug Response Model · Source code and reproducible analysis on GitHub</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
