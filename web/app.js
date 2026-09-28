@@ -1,84 +1,31 @@
 const BASE="https://raw.githubusercontent.com/Evan-CRD/egfr-resistance-predictor/main/strong_model_outputs/";
-const URLS={oof:BASE+"best_model_oof_predictions.csv",comparison:BASE+"feature_set_comparison.csv",meta:BASE+"best_model_metadata.json"};
-let oof=[], comparison=[], meta={}, currentRows=[];
+let oof=[],comp=[],meta={},heroViewer=null,detailViewer=null,spin=false;
+const $=id=>document.getElementById(id), n=v=>Number(v), f=(v,d=3)=>Number.isFinite(n(v))?n(v).toFixed(d):"—";
+function parseCSV(t){const ls=t.trim().split(/\r?\n/),h=ls.shift().split(",");return ls.filter(Boolean).map(line=>{let a=[],s="",q=false;for(const c of line){if(c=='"')q=!q;else if(c==","&&!q){a.push(s);s=""}else s+=c}a.push(s);return Object.fromEntries(h.map((x,i)=>[x,a[i]??""]))})}
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+function ranks(a){let p=a.map((v,i)=>[v,i]).sort((x,y)=>x[0]-y[0]),r=Array(a.length),i=0;while(i<p.length){let j=i;while(j+1<p.length&&p[j+1][0]===p[i][0])j++;let z=(i+j+2)/2;for(let k=i;k<=j;k++)r[p[k][1]]=z;i=j+1}return r}
+function corr(a,b){let A=mean(a),B=mean(b),x=0,y=0,z=0;for(let i=0;i<a.length;i++){let p=a[i]-A,q=b[i]-B;x+=p*q;y+=p*p;z+=q*q}return x/Math.sqrt(y*z)}
+const spear=(a,b)=>corr(ranks(a),ranks(b));
+function theme(init=false){let saved=localStorage.getItem("egfr-theme");let mode=saved||(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.dataset.theme=mode;$("themeToggle").textContent=mode==="dark"?"☀︎":"☾";if(!init) setTimeout(()=>{if(heroViewer)styleViewer(heroViewer);if(detailViewer)styleViewer(detailViewer,true)},20)}
+$("themeToggle").onclick=()=>{let x=document.documentElement.dataset.theme==="dark"?"light":"dark";localStorage.setItem("egfr-theme",x);document.documentElement.dataset.theme=x;$("themeToggle").textContent=x==="dark"?"☀︎":"☾";if(heroViewer)styleViewer(heroViewer);if(detailViewer)styleViewer(detailViewer,true)};theme(true);
 
-function parseCSV(text){
-  const lines=text.trim().split(/\r?\n/); const headers=lines.shift().split(",");
-  return lines.filter(Boolean).map(line=>{
-    const vals=[]; let s="",q=false;
-    for(let i=0;i<line.length;i++){const c=line[i]; if(c=='"'){q=!q}else if(c==","&&!q){vals.push(s);s=""}else{s+=c}} vals.push(s);
-    return Object.fromEntries(headers.map((h,i)=>[h,vals[i]??""]));
-  });
-}
-function num(v){return Number(v)}
-function fmt(v,n=3){return Number.isFinite(Number(v))?Number(v).toFixed(n):"—"}
-function mean(a){return a.reduce((x,y)=>x+y,0)/a.length}
-function rank(a){const sorted=[...a].map((v,i)=>[v,i]).sort((x,y)=>x[0]-y[0]);const r=new Array(a.length);let i=0;while(i<sorted.length){let j=i;while(j+1<sorted.length&&sorted[j+1][0]===sorted[i][0])j++;const avg=(i+j+2)/2;for(let k=i;k<=j;k++)r[sorted[k][1]]=avg;i=j+1}return r}
-function pearson(a,b){const ma=mean(a),mb=mean(b);let n=0,da=0,db=0;for(let i=0;i<a.length;i++){const x=a[i]-ma,y=b[i]-mb;n+=x*y;da+=x*x;db+=y*y}return n/Math.sqrt(da*db)}
-function spearman(a,b){return pearson(rank(a),rank(b))}
-function metric(label,value){return `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`}
-
-document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active")); b.classList.add("active");
-  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active")); document.getElementById(b.dataset.page).classList.add("active");
-});
-
-async function load(){
-  try{
-    const [ot,ct,mr]=await Promise.all([fetch(URLS.oof).then(r=>r.text()),fetch(URLS.comparison).then(r=>r.text()),fetch(URLS.meta).then(r=>r.json())]);
-    oof=parseCSV(ot); comparison=parseCSV(ct); meta=mr;
-    initPrediction(); initComparison(); initValidation(); initSource();
-    document.getElementById("status").classList.add("ok");
-  }catch(e){document.getElementById("status").innerHTML="Could not load project data from GitHub. Refresh the page or check the repository connection."; console.error(e)}
-}
-function initPrediction(){
-  const muts=[...new Set(oof.map(r=>r.mutation))].sort();
-  const sel=document.getElementById("mutationSelect"); sel.innerHTML=muts.map(m=>`<option>${m}</option>`).join("");
-  sel.onchange=updateMutation; updateMutation(); document.getElementById("showProfile").onclick=showProfile;
-}
-function updateMutation(){
-  const m=document.getElementById("mutationSelect").value, rows=oof.filter(r=>r.mutation===m), r=rows[0]||{};
-  document.getElementById("groupField").value=r.structure_group||"—"; document.getElementById("exonField").value=r.exon1||"Not specified";
-  document.getElementById("mutationNote").innerHTML=`<strong>${m}</strong> is linked to the published <strong>${r.structure_group||"—"}</strong> structure–function class.`;
-  document.getElementById("profileResults").classList.add("hidden");
-}
-function showProfile(){
-  const m=document.getElementById("mutationSelect").value; currentRows=oof.filter(r=>r.mutation===m).map(r=>({...r,response:num(r.response),prediction:num(r.prediction)})).sort((a,b)=>b.response-a.response);
-  const errors=currentRows.map(r=>Math.abs(r.response-r.prediction)), a=currentRows.map(r=>r.response), b=currentRows.map(r=>r.prediction);
-  document.getElementById("mGroup").textContent=currentRows[0]?.structure_group||"—"; document.getElementById("mDrugs").textContent=currentRows.length;
-  document.getElementById("mMae").textContent=fmt(mean(errors)); document.getElementById("mSpearman").textContent=fmt(spearman(a,b));
-  renderBars(currentRows); renderProfileTable(currentRows); document.getElementById("profileResults").classList.remove("hidden");
-}
-function renderBars(rows){
-  const vals=rows.flatMap(r=>[r.response,r.prediction]), min=Math.min(...vals,0),max=Math.max(...vals,0), span=max-min||1;
-  const h=v=>Math.max(3,Math.abs(v)*210/Math.max(Math.abs(min),Math.abs(max)));
-  document.getElementById("profileChart").innerHTML=rows.map(r=>`<div class="bar-group" title="${r.drug}: experimental ${fmt(r.response)}, predicted ${fmt(r.prediction)}"><div class="bar exp" style="height:${h(r.response)}px"></div><div class="bar pred" style="height:${h(r.prediction)}px"></div><span class="bar-label">${r.drug}</span></div>`).join("");
-  document.getElementById("profileChart").insertAdjacentHTML("beforebegin",'<div class="legend"><span class="dot exp"></span>Experimental <span class="dot pred"></span>Held-out prediction</div>');
-}
-function renderProfileTable(rows){
-  const t=document.getElementById("profileTable"); t.innerHTML="<thead><tr><th>Drug</th><th>Experimental log₂ ratio</th><th>Held-out predicted log₂ ratio</th><th>Absolute error</th><th>Experimental fold vs WT</th><th>Predicted fold vs WT</th></tr></thead><tbody>"+rows.map(r=>`<tr><td>${r.drug}</td><td>${fmt(r.response)}</td><td>${fmt(r.prediction)}</td><td>${fmt(Math.abs(r.response-r.prediction))}</td><td>${fmt(2**r.response,2)}</td><td>${fmt(2**r.prediction,2)}</td></tr>`).join("")+"</tbody>";
-}
-document.getElementById("downloadCsv").onclick=()=>{
-  const head="drug,structure_group,experimental_value,held_out_prediction,absolute_error,experimental_fold_vs_WT,held_out_fold_vs_WT\n";
-  const body=currentRows.map(r=>[r.drug,r.structure_group,r.response,r.prediction,Math.abs(r.response-r.prediction),2**r.response,2**r.prediction].join(",")).join("\n");
-  const blob=new Blob([head+body],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=document.getElementById("mutationSelect").value+"_experimental_and_predicted_profile.csv";a.click();URL.revokeObjectURL(a.href);
-};
-function initComparison(){
-  const by=Object.fromEntries(comparison.map(r=>[r.model,r])); const ex=by.drug_plus_exon, st=by.drug_plus_structure;
-  if(ex&&st) document.getElementById("comparisonMetrics").innerHTML=metric("Exon model R²",fmt(ex.R2))+metric("Structure-group R²",fmt(st.R2))+metric("Exon Spearman",fmt(ex.Spearman))+metric("Structure-group Spearman",fmt(st.Spearman));
-  const cols=["model","n_features","MAE","RMSE","R2","Spearman"]; document.getElementById("comparisonTable").innerHTML="<thead><tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr></thead><tbody>"+comparison.map(r=>"<tr>"+cols.map(c=>`<td>${c==="model"?r[c]:fmt(r[c])}</td>`).join("")+"</tr>").join("")+"</tbody>";
-  const vals=comparison.flatMap(r=>[num(r.R2),num(r.Spearman)]); const max=Math.max(...vals,1);
-  document.getElementById("comparisonChart").innerHTML=comparison.map(r=>`<div class="bar-group" title="${r.model}"><div class="bar exp" style="height:${Math.max(3,num(r.R2)/max*210)}px"></div><div class="bar pred" style="height:${Math.max(3,num(r.Spearman)/max*210)}px"></div><span class="bar-label">${r.model}</span></div>`).join("");
-  document.getElementById("comparisonChart").insertAdjacentHTML("beforebegin",'<div class="legend"><span class="dot exp"></span>R² <span class="dot pred"></span>Spearman</div>');
-}
-function initValidation(){
-  const a=oof.map(r=>num(r.response)),b=oof.map(r=>num(r.prediction)), errors=a.map((v,i)=>Math.abs(v-b[i])), rmse=Math.sqrt(mean(a.map((v,i)=>(v-b[i])**2))), ma=mean(a), sse=a.reduce((s,v,i)=>s+(v-b[i])**2,0),sst=a.reduce((s,v)=>s+(v-ma)**2,0),r2=1-sse/sst;
-  document.getElementById("validationMetrics").innerHTML=metric("R²",fmt(r2))+metric("Spearman",fmt(spearman(a,b)))+metric("MAE",fmt(mean(errors)))+metric("RMSE",fmt(rmse));
-  const all=[...a,...b],mn=Math.min(...all),mx=Math.max(...all),span=mx-mn||1, box=document.getElementById("scatterPlot");
-  box.innerHTML=oof.map(r=>{const x=(num(r.response)-mn)/span*94+3,y=97-(num(r.prediction)-mn)/span*94;return `<i class="point" style="left:${x}%;top:${y}%" title="${r.mutation} · ${r.drug}"></i>`}).join("")+'<span class="axis-label" style="bottom:5px;left:42%">Experimental response →</span><span class="axis-label" style="left:6px;top:8px">Held-out prediction ↑</span>';
-}
-function initSource(){
-  const muts=new Set(oof.map(r=>r.mutation)).size, drugs=new Set(oof.map(r=>r.drug)).size;
-  document.getElementById("sourceMetrics").innerHTML=metric("Mutation labels",meta.n_mutations??muts)+metric("TKIs",meta.n_drugs??drugs)+metric("Mutation–drug rows",(meta.n_rows??oof.length).toLocaleString())+metric("Response used","Median replicate");
-}
+async function load(){try{let [a,b,c]=await Promise.all([fetch(BASE+"best_model_oof_predictions.csv").then(r=>r.text()),fetch(BASE+"feature_set_comparison.csv").then(r=>r.text()),fetch(BASE+"best_model_metadata.json").then(r=>r.json())]);oof=parseCSV(a);comp=parseCSV(b);meta=c;initUI();init3D()}catch(e){console.error(e)}}
+function initUI(){let muts=[...new Set(oof.map(r=>r.mutation))].sort();$("mutationSelect").innerHTML=muts.map(x=>`<option>${x}</option>`).join("");$("heroMut").textContent=meta.n_mutations??muts.length;$("heroDrugs").textContent=meta.n_drugs??new Set(oof.map(r=>r.drug)).size;$("heroRows").textContent=(meta.n_rows??oof.length).toLocaleString();$("mutationSelect").onchange=update;update();validation();models()}
+function mutationResidue(m){let x=m.match(/[A-Z](\d+)[A-Z*]/i);return x?Number(x[1]):null}
+function update(){let m=$("mutationSelect").value,rows=oof.filter(r=>r.mutation===m).map(r=>({...r,response:n(r.response),prediction:n(r.prediction)})),r=rows[0]||{},mae=mean(rows.map(x=>Math.abs(x.response-x.prediction)));$("groupField").value=r.structure_group||"—";$("exonField").value=r.exon1||"Not specified";$("mutationName").textContent=m;$("sumClass").textContent=r.structure_group||"—";$("sumExon").textContent=r.exon1||"—";$("sumDrugs").textContent=rows.length;$("sumMae").textContent=f(mae);drawProfile(rows);highlightMutation(m)}
+function colors(){let s=getComputedStyle(document.documentElement);return{text:s.getPropertyValue("--text").trim(),muted:s.getPropertyValue("--muted").trim(),line:s.getPropertyValue("--line").trim(),a:s.getPropertyValue("--accent").trim(),b:s.getPropertyValue("--accent2").trim(),panel:s.getPropertyValue("--panel").trim()}}
+function drawProfile(rows){let C=colors(),W=980,H=360,p={l:58,r:20,t:25,b:75},vals=rows.flatMap(x=>[x.response,x.prediction]),mn=Math.min(-1,...vals),mx=Math.max(1,...vals),x0=v=>p.l+(v-mn)/(mx-mn)*(W-p.l-p.r),bh=Math.min(22,(H-p.t-p.b)/Math.max(rows.length,1)*.32),gap=(H-p.t-p.b)/Math.max(rows.length,1);let grid="";for(let v=Math.ceil(mn);v<=Math.floor(mx);v++)grid+=`<line x1="${x0(v)}" y1="${p.t}" x2="${x0(v)}" y2="${H-p.b}" stroke="${C.line}"/><text x="${x0(v)}" y="${H-p.b+22}" text-anchor="middle" fill="${C.muted}" font-size="10">${v}</text>`;let bars=rows.map((r,i)=>{let y=p.t+i*gap+gap/2,xz=x0(0),xe=x0(r.response),xp=x0(r.prediction);return `<text x="${p.l-8}" y="${y+3}" text-anchor="end" fill="${C.muted}" font-size="9">${r.drug}</text><rect class="bar-hit" data-drug="${r.drug}" data-e="${r.response}" data-p="${r.prediction}" x="${Math.min(xz,xe)}" y="${y-bh-2}" width="${Math.max(2,Math.abs(xe-xz))}" height="${bh}" rx="2" fill="${C.a}"/><rect class="bar-hit" data-drug="${r.drug}" data-e="${r.response}" data-p="${r.prediction}" x="${Math.min(xz,xp)}" y="${y+2}" width="${Math.max(2,Math.abs(xp-xz))}" height="${bh}" rx="2" fill="${C.b}"/>`}).join("");$("profileChart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" aria-label="Experimental and held-out predicted drug response">${grid}${bars}</svg>`;document.querySelectorAll(".bar-hit").forEach(el=>{el.addEventListener("pointermove",tip);el.addEventListener("pointerleave",()=>$("chartTooltip").classList.add("hidden"))})}
+function tip(e){let t=$("chartTooltip");t.innerHTML=`<b>${e.currentTarget.dataset.drug}</b><br>Experimental: ${f(e.currentTarget.dataset.e)}<br>Held-out: ${f(e.currentTarget.dataset.p)}`;t.style.left=(e.clientX+12)+"px";t.style.top=(e.clientY+12)+"px";t.classList.remove("hidden")}
+function validation(){let a=oof.map(r=>n(r.response)),b=oof.map(r=>n(r.prediction)),mae=mean(a.map((x,i)=>Math.abs(x-b[i]))),rmse=Math.sqrt(mean(a.map((x,i)=>(x-b[i])**2))),av=mean(a),r2=1-a.reduce((s,x,i)=>s+(x-b[i])**2,0)/a.reduce((s,x)=>s+(x-av)**2,0);$("validationMetrics").innerHTML=[["R²",r2],["Spearman",spear(a,b)],["MAE",mae],["RMSE",rmse]].map(x=>`<div class="metric"><span>${x[0]}</span><b>${f(x[1])}</b></div>`).join("");drawScatter(a,b)}
+function drawScatter(a,b){let C=colors(),W=720,H=400,p=48,all=[...a,...b],mn=Math.min(...all),mx=Math.max(...all),pad=(mx-mn)*.05,mn2=mn-pad,mx2=mx+pad,X=v=>p+(v-mn2)/(mx2-mn2)*(W-2*p),Y=v=>H-p-(v-mn2)/(mx2-mn2)*(H-2*p);let pts=oof.map((r,i)=>`<circle class="pt" data-i="${i}" cx="${X(a[i])}" cy="${Y(b[i])}" r="4" fill="${C.a}" fill-opacity=".48" stroke="${C.panel}" stroke-width="1"/>`).join("");$("scatterChart").innerHTML=`<svg viewBox="0 0 ${W} ${H}"><line x1="${X(mn2)}" y1="${Y(mn2)}" x2="${X(mx2)}" y2="${Y(mx2)}" stroke="${C.b}" stroke-dasharray="5 5" opacity=".65"/><line x1="${p}" y1="${H-p}" x2="${W-p}" y2="${H-p}" stroke="${C.line}"/><line x1="${p}" y1="${p}" x2="${p}" y2="${H-p}" stroke="${C.line}"/>${pts}<text x="${W/2}" y="${H-8}" text-anchor="middle" fill="${C.muted}" font-size="10">Experimental response</text><text x="12" y="${H/2}" fill="${C.muted}" font-size="10" transform="rotate(-90 12 ${H/2})">Held-out prediction</text></svg>`;document.querySelectorAll(".pt").forEach(x=>x.onclick=()=>selectPoint(x))}
+function selectPoint(el){document.querySelectorAll(".pt").forEach(x=>{x.setAttribute("r","4");x.setAttribute("fill-opacity",".35")});el.setAttribute("r","7");el.setAttribute("fill-opacity","1");let r=oof[n(el.dataset.i)];$("pointInfo").innerHTML=`<b>${r.mutation}</b> · ${r.drug} &nbsp; Experimental <b>${f(r.response)}</b> &nbsp; Predicted <b>${f(r.prediction)}</b>`}
+$("resetScatter").onclick=()=>{document.querySelectorAll(".pt").forEach(x=>{x.setAttribute("r","4");x.setAttribute("fill-opacity",".48")});$("pointInfo").textContent="Select a point to inspect mutation and drug."}
+function models(){let max=Math.max(...comp.map(r=>n(r.R2)),.01);$("modelBars").innerHTML=comp.map(r=>`<div class="model-row"><div class="model-label"><span>${r.model.replaceAll("_"," ")}</span><b>R² ${f(r.R2)}</b></div><div class="track"><div class="fill" style="width:${Math.max(0,n(r.R2))/max*100}%"></div></div></div>`).join("")}
+function bg(){return document.documentElement.dataset.theme==="dark"?"#0a0e12":"#ffffff"}
+function styleViewer(v,detail=false){v.setBackgroundColor(bg());v.setStyle({}, {cartoon:{color:"spectrum",opacity:.88}});v.setStyle({hetflag:true},{stick:{radius:.16,colorscheme:"greenCarbon"}});if(detail)highlightMutation($("mutationSelect").value,false);v.render()}
+function init3D(){if(!window.$3Dmol){$("molFallback").classList.remove("hidden");return}try{heroViewer=$3Dmol.createViewer("molHero",{backgroundColor:bg()});detailViewer=$3Dmol.createViewer("molDetail",{backgroundColor:bg()});[heroViewer,detailViewer].forEach((v,i)=>{$3Dmol.download("pdb:7JXP",v,{},()=>{styleViewer(v,i===1);v.zoomTo();v.render()})})}catch(e){console.error(e);$("molFallback").classList.remove("hidden")}}
+function highlightMutation(m,focus=true){if(!detailViewer)return;let res=mutationResidue(m);styleViewerBase(detailViewer);if(res){detailViewer.addStyle({resi:res},{stick:{color:"#ff3b6b",radius:.25},sphere:{color:"#ff3b6b",radius:.7}});detailViewer.removeAllLabels();detailViewer.addLabel(m,{position:{resi:res},backgroundColor:"#ff3b6b",fontColor:"white",fontSize:12});if(focus)detailViewer.zoomTo({resi:res});$("structureMsg").textContent=`Highlighted residue ${res} when present in the displayed kinase-domain structure. Some dataset mutations lie outside this kinase-domain PDB.`}else $("structureMsg").textContent="No single residue number could be parsed for this mutation label.";detailViewer.render()}
+function styleViewerBase(v){v.setStyle({}, {cartoon:{color:"spectrum",opacity:.88}});v.setStyle({hetflag:true},{stick:{radius:.16,colorscheme:"greenCarbon"}})}
+$("reset3d").onclick=()=>{if(heroViewer){heroViewer.zoomTo();heroViewer.render()}};$("zoomMutation").onclick=()=>highlightMutation($("mutationSelect").value,true);$("spin3d").onclick=()=>{if(detailViewer){spin=!spin;detailViewer.spin(spin?"y":false);$("spin3d").textContent=spin?"Stop":"Spin"}}
+window.addEventListener("resize",()=>{heroViewer?.resize();detailViewer?.resize()});
 load();
